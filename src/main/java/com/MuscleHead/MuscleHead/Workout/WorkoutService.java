@@ -34,6 +34,18 @@ public class WorkoutService {
     }
 
     @Transactional
+    public boolean deleteWorkoutById(long workoutId) {
+        if (workoutId == 0) {
+            return false;
+        }
+        if (!workoutRepository.existsById(workoutId)) {
+            return false;
+        }
+        workoutRepository.deleteById(workoutId);
+        return true;
+    }
+
+    @Transactional
     public boolean updateWorkout(Workout updatedWorkout) {
         if (updatedWorkout == null || updatedWorkout.getWorkout_id() == 0) {
             return false;
@@ -55,6 +67,28 @@ public class WorkoutService {
                     return true;
                 })
                 .orElse(false);
+    }
+
+    @Transactional
+    public java.util.Optional<Workout> updateWorkoutById(long workoutId, Workout updatedWorkout) {
+        if (updatedWorkout == null) {
+            return java.util.Optional.empty();
+        }
+
+        return workoutRepository.findById(workoutId)
+                .map(existingWorkout -> {
+                    existingWorkout.setDate(updatedWorkout.getDate());
+                    existingWorkout.setNotes(updatedWorkout.getNotes());
+                    existingWorkout.setWorkout_name(updatedWorkout.getWorkout_name());
+                    existingWorkout.setArea_of_activation(updatedWorkout.getArea_of_activation());
+                    existingWorkout.setReps(updatedWorkout.getReps());
+                    existingWorkout.setSets(updatedWorkout.getSets());
+                    existingWorkout.setDuration(updatedWorkout.getDuration());
+                    existingWorkout.setTotal_weight_lifted(updatedWorkout.getTotal_weight_lifted());
+                    existingWorkout.setUser(updatedWorkout.getUser());
+
+                    return workoutRepository.save(existingWorkout);
+                });
     }
 
     public Workout getWorkoutById(long workoutId) {

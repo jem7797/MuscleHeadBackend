@@ -28,22 +28,22 @@ public class WorkoutController {
         return ResponseEntity.ok(createdWorkout);
     }
 
-    @PutMapping
-    public ResponseEntity<Boolean> updateWorkout(@Valid @RequestBody Workout workout) {
-        boolean updated = workoutService.updateWorkout(workout);
-        if (!updated) {
-            return ResponseEntity.notFound().build();
-        }
-        return ResponseEntity.ok(true);
+    @PutMapping("/{id}")
+    public ResponseEntity<Workout> updateWorkout(
+            @PathVariable("id") long workoutId,
+            @Valid @RequestBody Workout workout) {
+        workout.setWorkout_id(workoutId);
+        return workoutService.updateWorkoutById(workoutId, workout)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping
-    public ResponseEntity<Boolean> deleteWorkout(@Valid @RequestBody Workout workout) {
-        boolean deleted = workoutService.deleteWorkout(workout);
-        if (!deleted) {
-            return ResponseEntity.notFound().build();
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteWorkout(@PathVariable("id") long workoutId) {
+        if (workoutService.deleteWorkoutById(workoutId)) {
+            return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.ok(true);
+        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/{id}")

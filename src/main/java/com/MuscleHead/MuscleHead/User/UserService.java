@@ -63,6 +63,18 @@ public class UserService {
         return true;
     }
 
+    @Transactional
+    public boolean deleteUserById(String subId) {
+        if (subId == null || subId.isBlank()) {
+            return false;
+        }
+        if (!userRepository.existsById(subId)) {
+            return false;
+        }
+        userRepository.deleteById(subId);
+        return true;
+    }
+
     public Optional<User> getUserByUsername(String username) {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("Username must not be blank");

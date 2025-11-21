@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -31,16 +32,19 @@ public class UserController {
         }
     }
 
-    @PutMapping
-    public ResponseEntity<User> updateUser(@Valid @RequestBody User user) {
+    @PutMapping("/{subId}")
+    public ResponseEntity<User> updateUser(
+            @PathVariable String subId,
+            @Valid @RequestBody User user) {
+        user.setSub_id(subId);
         return userService.updateUser(user)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping
-    public ResponseEntity<Void> deleteUser(@Valid @RequestBody User user) {
-        if (userService.deleteUser(user)) {
+    @DeleteMapping("/{subId}")
+    public ResponseEntity<Void> deleteUser(@PathVariable String subId) {
+        if (userService.deleteUserById(subId)) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
