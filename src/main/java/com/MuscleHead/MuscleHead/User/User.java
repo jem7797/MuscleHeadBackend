@@ -12,28 +12,53 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 // ✅ ADDED: Import for OneToMany relationship annotation
 import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 @Entity
 public class User {
 
     @Id
+    @NotBlank(message = "User ID (sub_id) cannot be blank")
     private String sub_id;
 
+    @NotBlank(message = "Username cannot be empty")
     private String username;
+
+    @Positive(message = "Height must be a positive number")
     private int height;
+
+    @Positive(message = "Weight must be a positive number")
     private int weight;
     private boolean show_weight;
     private boolean show_height;
     private boolean stat_tracking;
     private String privacy_setting;
+
+    @PositiveOrZero(message = "Lifetime weight lifted cannot be negative")
     private double lifetime_weight_lifted;
+
+    @PositiveOrZero(message = "Lifetime gym time cannot be negative")
     private double lifetime_gym_time;
+
+    @Min(value = 0, message = "Number of followers cannot be negative")
     private int number_of_followers;
+
+    @Min(value = 0, message = "Number following cannot be negative")
     private int number_following;
+
     private String profilePicUrl;
+
+    @PositiveOrZero(message = "XP cannot be negative")
     private double XP;
+    private boolean nattyStatus;
 
     @Column(updatable = false)
+    @Min(value = 1920, message = "Birth year must be 1900 or later")
+    @Max(value = 2010, message = "Birth year must be 2010 or earlier")
     private int birth_year;
 
     @Column(updatable = false)
@@ -118,6 +143,14 @@ public class User {
         this.stat_tracking = stat_tracking;
     }
 
+    public boolean isNattyStatus() {
+        return nattyStatus;
+    }
+
+    public void setNattyStatus(boolean nattyStatus) {
+        this.nattyStatus = nattyStatus;
+    }
+
     public String getPrivacy_setting() {
         return privacy_setting;
     }
@@ -195,6 +228,7 @@ public class User {
         result = prime * result + (show_weight ? 1231 : 1237);
         result = prime * result + (show_height ? 1231 : 1237);
         result = prime * result + (stat_tracking ? 1231 : 1237);
+        result = prime * result + (nattyStatus ? 1231 : 1237);
         result = prime * result + ((privacy_setting == null) ? 0 : privacy_setting.hashCode());
         long temp;
         temp = Double.doubleToLongBits(lifetime_weight_lifted);
@@ -239,6 +273,8 @@ public class User {
         if (show_height != other.show_height)
             return false;
         if (stat_tracking != other.stat_tracking)
+            return false;
+        if (nattyStatus != other.nattyStatus)
             return false;
         if (privacy_setting == null) {
             if (other.privacy_setting != null)

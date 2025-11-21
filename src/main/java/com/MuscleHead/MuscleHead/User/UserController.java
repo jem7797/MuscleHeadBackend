@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("user/api/")
 public class UserController {
@@ -20,7 +22,7 @@ public class UserController {
     private UserService userService;
 
     @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
         try {
             User createdUser = userService.createNewUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
@@ -30,14 +32,14 @@ public class UserController {
     }
 
     @PutMapping
-    public ResponseEntity<User> updateUser(@RequestBody User user) {
+    public ResponseEntity<User> updateUser(@Valid @RequestBody User user) {
         return userService.updateUser(user)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping
-    public ResponseEntity<Void> deleteUser(@RequestBody User user) {
+    public ResponseEntity<Void> deleteUser(@Valid @RequestBody User user) {
         if (userService.deleteUser(user)) {
             return ResponseEntity.noContent().build();
         }

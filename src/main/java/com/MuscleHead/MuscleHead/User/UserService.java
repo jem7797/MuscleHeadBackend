@@ -38,6 +38,7 @@ public class UserService {
                     existingUser.setShow_weight(updatedUser.isShow_weight());
                     existingUser.setShow_height(updatedUser.isShow_height());
                     existingUser.setStat_tracking(updatedUser.isStat_tracking());
+                    existingUser.setNattyStatus(updatedUser.isNattyStatus());
                     existingUser.setPrivacy_setting(updatedUser.getPrivacy_setting());
                     existingUser.setLifetime_weight_lifted(updatedUser.getLifetime_weight_lifted());
                     existingUser.setLifetime_gym_time(updatedUser.getLifetime_gym_time());

@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("workout/api/")
 public class WorkoutController {
@@ -21,13 +23,13 @@ public class WorkoutController {
     private WorkoutService workoutService;
 
     @PostMapping
-    public ResponseEntity<Workout> createWorkout(@RequestBody Workout workout) {
+    public ResponseEntity<Workout> createWorkout(@Valid @RequestBody Workout workout) {
         Workout createdWorkout = workoutService.createNewWorkout(workout);
         return ResponseEntity.ok(createdWorkout);
     }
 
     @PutMapping
-    public ResponseEntity<Boolean> updateWorkout(@RequestBody Workout workout) {
+    public ResponseEntity<Boolean> updateWorkout(@Valid @RequestBody Workout workout) {
         boolean updated = workoutService.updateWorkout(workout);
         if (!updated) {
             return ResponseEntity.notFound().build();
@@ -36,7 +38,7 @@ public class WorkoutController {
     }
 
     @DeleteMapping
-    public ResponseEntity<Boolean> deleteWorkout(@RequestBody Workout workout) {
+    public ResponseEntity<Boolean> deleteWorkout(@Valid @RequestBody Workout workout) {
         boolean deleted = workoutService.deleteWorkout(workout);
         if (!deleted) {
             return ResponseEntity.notFound().build();

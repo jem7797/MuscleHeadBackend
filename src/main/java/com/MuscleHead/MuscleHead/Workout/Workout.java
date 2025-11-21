@@ -15,6 +15,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 @Entity
 @Table(name = "workouts")
@@ -26,20 +30,31 @@ public class Workout {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sub_id", referencedColumnName = "sub_id", nullable = false)
+    @NotNull(message = "User is required")
     private User user;
 
     @Column(updatable = false, columnDefinition = "TIMESTAMP")
+    @NotNull(message = "Workout date is required")
     private Instant date;
 
     private String notes;
+
+    @NotBlank(message = "Workout name cannot be blank")
     private String workout_name;
 
     @ElementCollection
     private List<String> area_of_activation;
 
+    @Positive(message = "Reps must be a positive number")
     private int reps;
+
+    @Positive(message = "Sets must be a positive number")
     private int sets;
+
+    @PositiveOrZero(message = "Duration cannot be negative")
     private double duration;
+
+    @PositiveOrZero(message = "Total weight lifted cannot be negative")
     private double total_weight_lifted;
 
     public long getWorkout_id() {
