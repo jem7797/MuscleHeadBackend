@@ -16,7 +16,7 @@ public class WorkoutService {
     @Transactional
     public Workout createNewWorkout(Workout workout) {
         if (workout == null || workout.getUser() == null || workout.getUser().getSub_id() == null) {
-            throw new IllegalArgumentException("Error creating new user");
+            throw new IllegalArgumentException("Error creating new workout");
         }
         return workoutRepository.save(workout);
     }

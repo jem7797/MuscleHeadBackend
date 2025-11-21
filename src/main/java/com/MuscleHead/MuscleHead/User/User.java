@@ -5,6 +5,7 @@ import java.util.List;
 
 // ✅ ADDED: Import for Workout entity
 import com.MuscleHead.MuscleHead.Workout.Workout;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -30,6 +31,7 @@ public class User {
     private int number_of_followers;
     private int number_following;
     private String profilePicUrl;
+    private double XP;
 
     @Column(updatable = false)
     private int birth_year;
@@ -38,6 +40,7 @@ public class User {
     private String date_created;
 
     @OneToMany(mappedBy = "user")
+    @JsonIgnore
     private List<Workout> workouts;
 
     public User() {
@@ -97,6 +100,14 @@ public class User {
 
     public void setProfilePicUrl(String profilePicUrl) {
         this.profilePicUrl = profilePicUrl;
+    }
+
+    public double getXP() {
+        return XP;
+    }
+
+    public void setXP(double XP) {
+        this.XP = XP;
     }
 
     public boolean isStat_tracking() {
@@ -193,6 +204,8 @@ public class User {
         result = prime * result + number_of_followers;
         result = prime * result + number_following;
         result = prime * result + ((profilePicUrl == null) ? 0 : profilePicUrl.hashCode());
+        temp = Double.doubleToLongBits(XP);
+        result = prime * result + (int) (temp ^ (temp >>> 32));
         result = prime * result + birth_year;
         result = prime * result + ((date_created == null) ? 0 : date_created.hashCode());
         return result;
@@ -244,6 +257,8 @@ public class User {
             if (other.profilePicUrl != null)
                 return false;
         } else if (!profilePicUrl.equals(other.profilePicUrl))
+            return false;
+        if (Double.doubleToLongBits(XP) != Double.doubleToLongBits(other.XP))
             return false;
         if (birth_year != other.birth_year)
             return false;

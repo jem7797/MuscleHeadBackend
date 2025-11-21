@@ -45,9 +45,18 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<User> getUser(@RequestParam String username) {
-        return userService.getUserByUsername(username)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<User> getUser(@RequestParam(required = false) String username,
+            @RequestParam(required = false) String subId) {
+        if (subId != null && !subId.isBlank()) {
+            return userService.getUserById(subId)
+                    .map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        }
+        if (username != null && !username.isBlank()) {
+            return userService.getUserByUsername(username)
+                    .map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        }
+        return ResponseEntity.badRequest().build();
     }
 }

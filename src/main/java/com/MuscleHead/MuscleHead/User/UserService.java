@@ -44,6 +44,7 @@ public class UserService {
                     existingUser.setNumber_of_followers(updatedUser.getNumber_of_followers());
                     existingUser.setNumber_following(updatedUser.getNumber_following());
                     existingUser.setProfilePicUrl(updatedUser.getProfilePicUrl());
+                    existingUser.setXP(updatedUser.getXP());
 
                     return userRepository.save(existingUser);
                 });
@@ -66,5 +67,12 @@ public class UserService {
             throw new IllegalArgumentException("Username must not be blank");
         }
         return userRepository.findByUsername(username);
+    }
+
+    public Optional<User> getUserById(String subId) {
+        if (subId == null || subId.isBlank()) {
+            throw new IllegalArgumentException("User id must not be blank");
+        }
+        return userRepository.findById(subId);
     }
 }

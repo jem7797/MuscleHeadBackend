@@ -30,7 +30,7 @@ public class Workout {
 
     @Column(updatable = false, columnDefinition = "TIMESTAMP")
     private Instant date;
-    
+
     private String notes;
     private String workout_name;
 
@@ -46,7 +46,7 @@ public class Workout {
         return workout_id;
     }
 
-    public void setWorkout_id(int workout_id) {
+    public void setWorkout_id(long workout_id) {
         this.workout_id = workout_id;
     }
 
