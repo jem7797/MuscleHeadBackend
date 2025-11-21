@@ -1,8 +1,10 @@
 package com.MuscleHead.MuscleHead.Workout;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -53,8 +55,10 @@ public class WorkoutController {
     }
 
     @GetMapping("/user/{subId}")
-    public ResponseEntity<List<Workout>> getWorkoutsForUser(@PathVariable("subId") String subId) {
-        List<Workout> workouts = workoutService.getWorkoutsByUserId(subId);
+    public ResponseEntity<Page<Workout>> getWorkoutsForUser(
+            @PathVariable("subId") String subId,
+            @PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<Workout> workouts = workoutService.getWorkoutsByUserId(subId, pageable);
         return ResponseEntity.ok(workouts);
     }
 }

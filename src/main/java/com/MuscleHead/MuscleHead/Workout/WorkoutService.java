@@ -3,6 +3,8 @@ package com.MuscleHead.MuscleHead.Workout;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
@@ -101,5 +103,12 @@ public class WorkoutService {
             throw new IllegalArgumentException("User id must not be blank");
         }
         return workoutRepository.findByUser_SubId(subId);
+    }
+
+    public Page<Workout> getWorkoutsByUserId(String subId, Pageable pageable) {
+        if (subId == null || subId.isBlank()) {
+            throw new IllegalArgumentException("User id must not be blank");
+        }
+        return workoutRepository.findByUser_SubId(subId, pageable);
     }
 }
