@@ -1,5 +1,7 @@
 package com.MuscleHead.MuscleHead.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -18,6 +20,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     /**
      * Handles bean validation errors from @Valid annotations
      * Returns 400 Bad Request with detailed field error messages
@@ -32,6 +36,8 @@ public class GlobalExceptionHandler {
             String errorMessage = error.getDefaultMessage();
             fieldErrors.put(fieldName, errorMessage);
         });
+
+        logger.warn("Validation failed: {}", fieldErrors);
 
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
@@ -49,6 +55,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        logger.warn("Illegal argument exception: {}", ex.getMessage());
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
@@ -70,9 +77,11 @@ public class GlobalExceptionHandler {
 
         // Check if it's a duplicate resource error
         if (ex.getMessage() != null && ex.getMessage().contains("already exists")) {
+            logger.warn("Resource conflict: {}", ex.getMessage());
             errorResponse.put("status", HttpStatus.CONFLICT.value());
             errorResponse.put("error", "Conflict");
         } else {
+            logger.warn("Illegal state exception: {}", ex.getMessage());
             errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
             errorResponse.put("error", "Bad Request");
         }
@@ -98,9 +107,11 @@ public class GlobalExceptionHandler {
 
         // Check if it's a "not found" error
         if (ex.getMessage() != null && ex.getMessage().contains("not found")) {
+            logger.warn("Resource not found: {}", ex.getMessage());
             errorResponse.put("status", HttpStatus.NOT_FOUND.value());
             errorResponse.put("error", "Not Found");
         } else {
+            logger.error("Runtime exception occurred", ex);
             errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
             errorResponse.put("error", "Internal Server Error");
         }
@@ -121,15 +132,13 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+        logger.error("Unexpected exception occurred", ex);
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
         errorResponse.put("error", "Internal Server Error");
         errorResponse.put("message", "An unexpected error occurred");
         errorResponse.put("path", "N/A");
-
-        // Log the full exception for debugging (you'd use a logger here)
-        ex.printStackTrace();
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
