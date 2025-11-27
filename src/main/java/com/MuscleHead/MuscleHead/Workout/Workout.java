@@ -19,10 +19,13 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "workouts")
-
+@Data
+@NoArgsConstructor
 public class Workout {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,85 +59,5 @@ public class Workout {
 
     @PositiveOrZero(message = "Total weight lifted cannot be negative")
     private double total_weight_lifted;
-
-    public long getWorkout_id() {
-        return workout_id;
-    }
-
-    public void setWorkout_id(long workout_id) {
-        this.workout_id = workout_id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Instant getDate() {
-        return date;
-    }
-
-    public void setDate(Instant date) {
-        this.date = date;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
-    public String getWorkout_name() {
-        return workout_name;
-    }
-
-    public void setWorkout_name(String workout_name) {
-        this.workout_name = workout_name;
-    }
-
-    public List<String> getArea_of_activation() {
-        return area_of_activation;
-    }
-
-    public void setArea_of_activation(List<String> area_of_activation) {
-        this.area_of_activation = area_of_activation;
-    }
-
-    public int getReps() {
-        return reps;
-    }
-
-    public void setReps(int reps) {
-        this.reps = reps;
-    }
-
-    public int getSets() {
-        return sets;
-    }
-
-    public void setSets(int sets) {
-        this.sets = sets;
-    }
-
-    public double getDuration() {
-        return duration;
-    }
-
-    public void setDuration(double duration) {
-        this.duration = duration;
-    }
-
-    public double getTotal_weight_lifted() {
-        return total_weight_lifted;
-    }
-
-    public void setTotal_weight_lifted(double total_weight_lifted) {
-        this.total_weight_lifted = total_weight_lifted;
-    }
 
 }

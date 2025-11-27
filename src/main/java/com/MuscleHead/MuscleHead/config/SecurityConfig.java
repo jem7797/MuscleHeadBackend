@@ -41,8 +41,10 @@ public class SecurityConfig {
         // Allow all headers
         configuration.setAllowedHeaders(List.of("*"));
 
-        // Allow credentials (cookies, authorization headers)
-        configuration.setAllowCredentials(true);
+        // Allow credentials set to false when using wildcard (*) origins
+        // Set to true only if you need cookies/auth headers and can specify exact
+        // origins
+        configuration.setAllowCredentials(false);
 
         // Expose all response headers to the client
         configuration.setExposedHeaders(List.of("*"));
