@@ -45,6 +45,12 @@ public class UserService {
                 .map(existingUser -> {
                     logger.debug("Found existing user, updating fields for sub_id: {}", updatedUser.getSub_id());
                     existingUser.setUsername(updatedUser.getUsername());
+                    if (updatedUser.getEmail() != null) {
+                        existingUser.setEmail(updatedUser.getEmail());
+                    }
+                    if (updatedUser.getFirst_name() != null) {
+                        existingUser.setFirst_name(updatedUser.getFirst_name());
+                    }
                     existingUser.setHeight(updatedUser.getHeight());
                     existingUser.setWeight(updatedUser.getWeight());
                     existingUser.setShow_weight(updatedUser.isShow_weight());
