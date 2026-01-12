@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.MuscleHead.MuscleHead.Workout.Workout;
 import com.MuscleHead.MuscleHead.validation.AwsCognitoSubId;
+import com.MuscleHead.MuscleHead.validation.OnCreate;
 import com.MuscleHead.MuscleHead.validation.ValidBirthYear;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -16,6 +17,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,8 +33,8 @@ import lombok.NoArgsConstructor;
 public class User {
 
     @Id
-    @NotBlank(message = "User ID (sub_id) cannot be blank")
-    @AwsCognitoSubId
+    @NotBlank(message = "User ID (sub_id) cannot be blank", groups = OnCreate.class)
+    @AwsCognitoSubId(groups = OnCreate.class)
     private String sub_id;
 
     @NotBlank(message = "Username cannot be empty")
@@ -85,6 +87,11 @@ public class User {
     @OneToMany(mappedBy = "user")
     @JsonIgnore
     private List<Workout> workouts;
+
+@Max(value = 3)
+@OneToMany
+    private List<User> nemesis;
+
 
     @PrePersist
     protected void onCreate() {

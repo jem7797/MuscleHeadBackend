@@ -15,7 +15,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.validation.Valid;
+import org.springframework.validation.annotation.Validated;
+
+import com.MuscleHead.MuscleHead.validation.OnCreate;
+import com.MuscleHead.MuscleHead.validation.OnUpdate;
+
+import jakarta.validation.groups.Default;
 
 @RestController
 @RequestMapping("user/api/")
@@ -27,7 +32,7 @@ public class UserController {
     private UserService userService;
 
     @PostMapping
-    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+    public ResponseEntity<User> createUser(@Validated({OnCreate.class, Default.class}) @RequestBody User user) {
         logger.info("Creating new user with sub_id: {}", user.getSub_id());
         try {
             User createdUser = userService.createNewUser(user);
@@ -45,7 +50,7 @@ public class UserController {
     @PutMapping("/{subId}")
     public ResponseEntity<User> updateUser(
             @PathVariable String subId,
-            @Valid @RequestBody User user) {
+            @Validated({OnUpdate.class, Default.class}) @RequestBody User user) {
         logger.info("Updating user with sub_id: {}", subId);
         user.setSub_id(subId);
         return userService.updateUser(user)
