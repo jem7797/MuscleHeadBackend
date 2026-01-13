@@ -60,4 +60,6 @@ public class Workout {
     @PositiveOrZero(message = "Total weight lifted cannot be negative")
     private double total_weight_lifted;
 
+    @PositiveOrZero
+    private double workout_highest_lift;   
 }

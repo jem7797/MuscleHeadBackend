@@ -59,6 +59,7 @@ public class UserService {
                     existingUser.setNattyStatus(updatedUser.isNattyStatus());
                     existingUser.setPrivacy_setting(updatedUser.getPrivacy_setting());
                     existingUser.setLifetime_weight_lifted(updatedUser.getLifetime_weight_lifted());
+                    existingUser.setHighest_weight_lifted(updatedUser.getHighest_weight_lifted());
                     existingUser.setLifetime_gym_time(updatedUser.getLifetime_gym_time());
                     existingUser.setNumber_of_followers(updatedUser.getNumber_of_followers());
                     existingUser.setNumber_following(updatedUser.getNumber_following());

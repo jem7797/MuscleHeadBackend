@@ -60,6 +60,9 @@ public class User {
     @PositiveOrZero(message = "Lifetime weight lifted cannot be negative")
     private double lifetime_weight_lifted = 0;
 
+    @PositiveOrZero
+    private double highest_weight_lifted = 0;
+
     @PositiveOrZero(message = "Lifetime gym time cannot be negative")
     private double lifetime_gym_time;
 
