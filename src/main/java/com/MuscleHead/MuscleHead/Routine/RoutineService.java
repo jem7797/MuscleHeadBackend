@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.MuscleHead.MuscleHead.User.User;
+import com.MuscleHead.MuscleHead.User.UserRepository;
+
 import jakarta.transaction.Transactional;
 
 @Service
@@ -18,12 +21,59 @@ public class RoutineService {
     @Autowired
     private RoutineRepository routineRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ExerciseRepository exerciseRepository;
+
+    @Autowired
+    private RoutineExerciseRepository routineExerciseRepository;
+
     @Transactional
     public Routine createNewRoutine(Routine routine) {
         logger.debug("Creating new routine: {}", routine != null ? routine.getName() : "null");
         if (routine == null || routine.getUser() == null) {
             logger.error("Attempted to create routine with null routine or user");
             throw new IllegalArgumentException("Routine and user must exist and not be null");
+        }
+
+        // Ensure user exists
+        User user = routine.getUser();
+        if (user.getSub_id() == null) {
+            logger.error("Attempted to create routine with user missing sub_id");
+            throw new IllegalArgumentException("User sub_id must not be null");
+        }
+        User existingUser = userRepository.findById(user.getSub_id())
+                .orElseThrow(() -> {
+                    logger.error("User not found with sub_id: {}", user.getSub_id());
+                    return new IllegalArgumentException("User not found with sub_id: " + user.getSub_id());
+                });
+        routine.setUser(existingUser);
+
+        // Set routine reference on all RoutineExercises and ensure exercises exist
+        if (routine.getRoutineExercises() != null) {
+            for (RoutineExercise routineExercise : routine.getRoutineExercises()) {
+                routineExercise.setRoutine(routine);
+                if (routineExercise.getExercise() != null && routineExercise.getExercise().getId() != null) {
+                    // Exercise already exists, fetch it
+                    Exercise exercise = exerciseRepository.findById(routineExercise.getExercise().getId())
+                            .orElseThrow(() -> {
+                                logger.error("Exercise not found with id: {}", routineExercise.getExercise().getId());
+                                return new IllegalArgumentException(
+                                        "Exercise not found with id: " + routineExercise.getExercise().getId());
+                            });
+                    routineExercise.setExercise(exercise);
+                } else if (routineExercise.getExercise() != null && routineExercise.getExercise().getName() != null) {
+                    // Try to find by name, or create new exercise
+                    Exercise exercise = exerciseRepository.findByName(routineExercise.getExercise().getName())
+                            .orElseGet(() -> {
+                                logger.debug("Creating new exercise: {}", routineExercise.getExercise().getName());
+                                return exerciseRepository.save(routineExercise.getExercise());
+                            });
+                    routineExercise.setExercise(exercise);
+                }
+            }
         }
 
         Routine savedRoutine = routineRepository.save(routine);
@@ -45,9 +95,42 @@ public class RoutineService {
                     if (updatedRoutine.getName() != null) {
                         existingRoutine.setName(updatedRoutine.getName());
                     }
-                    if (updatedRoutine.getExercises() != null) {
-                        existingRoutine.setExercises(updatedRoutine.getExercises());
+
+                    // Handle RoutineExercises update
+                    if (updatedRoutine.getRoutineExercises() != null) {
+                        // Remove existing RoutineExercises (orphanRemoval will handle deletion)
+                        existingRoutine.getRoutineExercises().clear();
+
+                        // Add new RoutineExercises
+                        for (RoutineExercise routineExercise : updatedRoutine.getRoutineExercises()) {
+                            routineExercise.setRoutine(existingRoutine);
+                            if (routineExercise.getExercise() != null
+                                    && routineExercise.getExercise().getId() != null) {
+                                // Exercise already exists, fetch it
+                                Exercise exercise = exerciseRepository.findById(routineExercise.getExercise().getId())
+                                        .orElseThrow(() -> {
+                                            logger.error("Exercise not found with id: {}",
+                                                    routineExercise.getExercise().getId());
+                                            return new IllegalArgumentException("Exercise not found with id: "
+                                                    + routineExercise.getExercise().getId());
+                                        });
+                                routineExercise.setExercise(exercise);
+                            } else if (routineExercise.getExercise() != null
+                                    && routineExercise.getExercise().getName() != null) {
+                                // Try to find by name, or create new exercise
+                                Exercise exercise = exerciseRepository
+                                        .findByName(routineExercise.getExercise().getName())
+                                        .orElseGet(() -> {
+                                            logger.debug("Creating new exercise: {}",
+                                                    routineExercise.getExercise().getName());
+                                            return exerciseRepository.save(routineExercise.getExercise());
+                                        });
+                                routineExercise.setExercise(exercise);
+                            }
+                            existingRoutine.getRoutineExercises().add(routineExercise);
+                        }
                     }
+
                     Routine savedRoutine = routineRepository.save(existingRoutine);
                     logger.info("Routine updated successfully with id: {}", savedRoutine.getId());
                     return savedRoutine;
