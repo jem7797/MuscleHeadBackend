@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.MuscleHead.MuscleHead.User.User;
+import com.MuscleHead.MuscleHead.User.UserRepository;
+import com.MuscleHead.MuscleHead.config.SecurityUtils;
+
 import jakarta.validation.Valid;
 
 @RestController
@@ -30,18 +34,36 @@ public class RoutineController {
     @Autowired
     private RoutineService routineService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @PostMapping
-    public ResponseEntity<Routine> createRoutine(@Valid @RequestBody Routine routine) {
-        logger.info("Creating new routine: {}", routine.getName());
+    public ResponseEntity<RoutineResponse> createRoutine(@Valid @RequestBody RoutineRequest request) {
+        logger.info("Creating new routine: {}", request.getName());
+
+        // Resolve authenticated user
+        String subId = SecurityUtils.getCurrentUserSub();
+        if (subId == null) {
+            logger.error("Attempted to create routine without authentication");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User user = userRepository.findById(subId)
+                .orElseThrow(() -> {
+                    logger.error("User not found with sub_id: {}", subId);
+                    return new RuntimeException("User not found: " + subId);
+                });
+
         try {
-            Routine createdRoutine = routineService.createNewRoutine(routine);
-            logger.info("Successfully created routine with id: {}", createdRoutine.getId());
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdRoutine);
+            Routine createdRoutine = routineService.createRoutine(user, request);
+            logger.info("Successfully created routine with id: {} for user: {}", createdRoutine.getId(), subId);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(new RoutineResponse(createdRoutine.getId()));
         } catch (IllegalArgumentException ex) {
             logger.warn("Failed to create routine: {}", ex.getMessage());
-            return ResponseEntity.badRequest().build();
+            throw ex;
         } catch (Exception ex) {
-            logger.error("Error creating routine: {}", routine.getName(), ex);
+            logger.error("Error creating routine: {}", request.getName(), ex);
             throw ex;
         }
     }

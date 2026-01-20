@@ -1,5 +1,6 @@
 package com.MuscleHead.MuscleHead.Routine;
 
+import com.MuscleHead.MuscleHead.Exercise.Exercise;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Entity;
@@ -31,7 +32,7 @@ public class RoutineExercise {
     @JsonIgnore
     @NotNull(message = "Routine is required")
     private Routine routine;
-
+ 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "exercise_id", nullable = false)
     @NotNull(message = "Exercise is required")
@@ -41,9 +42,9 @@ public class RoutineExercise {
     @NotNull(message = "Order index is required")
     private Integer orderIndex;
 
-    @Positive(message = "Target reps must be a positive number")
-    private Integer targetReps;
+    @Positive(message = "Reps must be a positive number")
+    private Integer reps;
 
-    @Positive(message = "Target sets must be a positive number")
-    private Integer targetSets;
+    @Positive(message = "Sets must be a positive number")
+    private Integer sets;
 }

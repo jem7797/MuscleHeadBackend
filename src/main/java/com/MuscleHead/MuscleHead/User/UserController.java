@@ -32,8 +32,12 @@ public class UserController {
     private UserService userService;
 
     @PostMapping
-    public ResponseEntity<User> createUser(@Validated({OnCreate.class, Default.class}) @RequestBody User user) {
+    public ResponseEntity<User> createUser(
+        @Validated({OnCreate.class, Default.class}) 
+        @RequestBody User user
+    ) {
         logger.info("Creating new user with sub_id: {}", user.getSub_id());
+        
         try {
             User createdUser = userService.createNewUser(user);
             logger.info("Successfully created user with sub_id: {}", createdUser.getSub_id());
@@ -50,9 +54,13 @@ public class UserController {
     @PutMapping("/{subId}")
     public ResponseEntity<User> updateUser(
             @PathVariable String subId,
-            @Validated({OnUpdate.class, Default.class}) @RequestBody User user) {
+            @Validated({OnUpdate.class, Default.class}) 
+            @RequestBody User user
+        ) {
         logger.info("Updating user with sub_id: {}", subId);
+
         user.setSub_id(subId);
+
         return userService.updateUser(user)
                 .map(updatedUser -> {
                     logger.info("Successfully updated user with sub_id: {}", subId);
@@ -65,21 +73,29 @@ public class UserController {
     }
 
     @DeleteMapping("/{subId}")
-    public ResponseEntity<Void> deleteUser(@PathVariable String subId) {
+    public ResponseEntity<Void> deleteUser(
+        @PathVariable String subId 
+    ) {
         logger.info("Deleting user with sub_id: {}", subId);
+       
         if (userService.deleteUserById(subId)) {
             logger.info("Successfully deleted user with sub_id: {}", subId);
+            
             return ResponseEntity.noContent().build();
         }
         logger.warn("User not found for deletion: sub_id: {}", subId);
+       
         return ResponseEntity.notFound().build();
     }
 
     @GetMapping
-    public ResponseEntity<User> getUser(@RequestParam(required = false) String username,
-            @RequestParam(required = false) String subId) {
+    public ResponseEntity<User> getUser(
+        @RequestParam(required = false) String username,
+        @RequestParam(required = false) String subId
+        ) {
         if (subId != null && !subId.isBlank()) {
             logger.debug("Getting user by sub_id: {}", subId);
+            
             return userService.getUserById(subId)
                     .map(user -> {
                         logger.debug("Found user with sub_id: {}", subId);
@@ -89,9 +105,11 @@ public class UserController {
                         logger.warn("User not found with sub_id: {}", subId);
                         return ResponseEntity.notFound().build();
                     });
+
         }
         if (username != null && !username.isBlank()) {
             logger.debug("Getting user by username: {}", username);
+            
             return userService.getUserByUsername(username)
                     .map(user -> {
                         logger.debug("Found user with username: {}", username);

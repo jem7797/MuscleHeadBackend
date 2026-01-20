@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Routine;
+package com.MuscleHead.MuscleHead.Exercise;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.MuscleHead.MuscleHead.Exercise.Exercise;
+import com.MuscleHead.MuscleHead.Exercise.ExerciseRepository;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
 
@@ -29,6 +31,69 @@ public class RoutineService {
 
     @Autowired
     private RoutineExerciseRepository routineExerciseRepository;
+
+    @Transactional
+    public Routine createRoutine(User user, RoutineRequest request) {
+        logger.debug("Creating new routine: {} for user: {}",
+                request != null ? request.getName() : "null", user != null ? user.getSub_id() : "null");
+
+        if (user == null || user.getSub_id() == null) {
+            logger.error("Attempted to create routine with null user or sub_id");
+            throw new IllegalArgumentException("User is required");
+        }
+
+        if (request == null || request.getName() == null || request.getName().isBlank()) {
+            logger.error("Attempted to create routine with null or blank name");
+            throw new IllegalArgumentException("Routine name is required");
+        }
+
+        if (request.getExercises() == null || request.getExercises().isEmpty()) {
+            logger.error("Attempted to create routine with null or empty exercises list");
+            throw new IllegalArgumentException("Exercises list is required and cannot be empty");
+        }
+
+        // Ensure user exists
+        User existingUser = userRepository.findById(user.getSub_id())
+                .orElseThrow(() -> {
+                    logger.error("User not found with sub_id: {}", user.getSub_id());
+                    return new IllegalArgumentException("User not found with sub_id: " + user.getSub_id());
+                });
+
+        // Create Routine
+        Routine routine = new Routine();
+        routine.setUser(existingUser);
+        routine.setName(request.getName());
+
+        // Create RoutineExercise entities
+        java.util.List<RoutineExercise> routineExercises = new java.util.ArrayList<>();
+        for (RoutineExerciseRequest exerciseRequest : request.getExercises()) {
+            // Find Exercise
+            Exercise exercise = exerciseRepository.findById(exerciseRequest.getExerciseId())
+                    .orElseThrow(() -> {
+                        logger.warn("Exercise not found with id: {}", exerciseRequest.getExerciseId());
+                        return new IllegalArgumentException("Exercise not found: " + exerciseRequest.getExerciseId());
+                    });
+
+            // Create RoutineExercise
+            RoutineExercise routineExercise = new RoutineExercise();
+            routineExercise.setRoutine(routine);
+            routineExercise.setExercise(exercise);
+            routineExercise.setOrderIndex(exerciseRequest.getOrderIndex());
+            routineExercise.setReps(exerciseRequest.getReps());
+            routineExercise.setSets(exerciseRequest.getSets());
+
+            routineExercises.add(routineExercise);
+        }
+
+        routine.setRoutineExercises(routineExercises);
+
+        // Save routine (cascade will save exercises)
+        Routine savedRoutine = routineRepository.save(routine);
+        logger.info("Routine created successfully with id: {} for user: {} with {} exercises",
+                savedRoutine.getId(), existingUser.getSub_id(), routineExercises.size());
+
+        return savedRoutine;
+    }
 
     @Transactional
     public Routine createNewRoutine(Routine routine) {
