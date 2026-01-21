@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Routine;
+package com.MuscleHead.MuscleHead.WorkoutTemplate;
 
 import java.util.List;
 
@@ -8,10 +8,10 @@ import org.springframework.data.repository.query.Param;
 
 import com.MuscleHead.MuscleHead.User.User;
 
-public interface RoutineRepository extends JpaRepository<Routine, Long> {
+public interface WorkoutTemplateRepository extends JpaRepository<WorkoutTemplate, Long> {
 
-    List<Routine> findByUser(User user);
+    List<WorkoutTemplate> findByUser(User user);
 
     @Query("SELECT r FROM Routine r WHERE r.user.sub_id = :subId")
-    List<Routine> findByUserSub_id(@Param("subId") String subId);
+    List<WorkoutTemplate> findByUserSub_id(@Param("subId") String subId);
 }

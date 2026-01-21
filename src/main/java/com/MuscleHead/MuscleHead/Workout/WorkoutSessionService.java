@@ -12,12 +12,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import com.MuscleHead.MuscleHead.Exercise.Exercise;
-import com.MuscleHead.MuscleHead.Exercise.ExerciseRepository;
-import com.MuscleHead.MuscleHead.Routine.Routine;
-import com.MuscleHead.MuscleHead.Routine.RoutineRepository;
+import com.MuscleHead.MuscleHead.Movement.Movement;
+import com.MuscleHead.MuscleHead.Movement.MovementRepository;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
+import com.MuscleHead.MuscleHead.WorkoutTemplate.WorkoutTemplate;
+import com.MuscleHead.MuscleHead.WorkoutTemplate.WorkoutTemplateRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -36,10 +36,10 @@ public class WorkoutSessionService {
     UserRepository userRepository;
 
     @Autowired
-    ExerciseRepository exerciseRepository;
+    MovementRepository exerciseRepository;
 
     @Autowired
-    RoutineRepository routineRepository;
+    WorkoutTemplateRepository routineRepository;
 
     @Transactional
     public WorkoutSession createWorkoutSession(User user, WorkoutSessionRequest request) {
@@ -63,7 +63,7 @@ public class WorkoutSessionService {
         
         // Set routine if provided
         if (request.getRoutineId() != null) {
-            Routine routine = routineRepository.findById(request.getRoutineId())
+            WorkoutTemplate routine = routineRepository.findById(request.getRoutineId())
                     .orElseThrow(() -> {
                         logger.warn("Routine not found with id: {}", request.getRoutineId());
                         return new IllegalArgumentException("Routine not found: " + request.getRoutineId());
@@ -79,7 +79,7 @@ public class WorkoutSessionService {
 
         for (WorkoutExerciseRequest exerciseRequest : request.getExercises()) {
             // Find Exercise
-            Exercise exercise = exerciseRepository.findById(exerciseRequest.getExerciseId())
+            Movement exercise = exerciseRepository.findById(exerciseRequest.getExerciseId())
                     .orElseThrow(() -> {
                         logger.warn("Exercise not found with id: {}", exerciseRequest.getExerciseId());
                         return new IllegalArgumentException("Exercise not found: " + exerciseRequest.getExerciseId());

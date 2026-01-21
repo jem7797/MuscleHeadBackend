@@ -1,8 +1,9 @@
-package com.MuscleHead.MuscleHead.Routine;
+package com.MuscleHead.MuscleHead.WorkoutTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.MuscleHead.MuscleHead.ExerciseInstance.ExerciseInstance;
 import com.MuscleHead.MuscleHead.User.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -26,7 +27,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "routine")
 @Data
 @NoArgsConstructor
-public class Routine {
+public class WorkoutTemplate {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,7 +42,7 @@ public class Routine {
     private String name;
 
     @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<RoutineExercise> routineExercises;
+    private List<ExerciseInstance> routineExercises;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -1,6 +1,7 @@
-package com.MuscleHead.MuscleHead.Routine;
+package com.MuscleHead.MuscleHead.ExerciseInstance;
 
-import com.MuscleHead.MuscleHead.Exercise.Exercise;
+import com.MuscleHead.MuscleHead.Movement.Movement;
+import com.MuscleHead.MuscleHead.WorkoutTemplate.WorkoutTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Entity;
@@ -21,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "routine_exercises")
 @Data
 @NoArgsConstructor
-public class RoutineExercise {
+public class ExerciseInstance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,12 +32,12 @@ public class RoutineExercise {
     @JoinColumn(name = "routine_id", nullable = false)
     @JsonIgnore
     @NotNull(message = "Routine is required")
-    private Routine routine;
+    private WorkoutTemplate routine;
  
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "exercise_id", nullable = false)
     @NotNull(message = "Exercise is required")
-    private Exercise exercise;
+    private Movement exercise;
 
     @PositiveOrZero(message = "Order index cannot be negative")
     @NotNull(message = "Order index is required")

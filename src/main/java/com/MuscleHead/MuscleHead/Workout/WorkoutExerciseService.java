@@ -29,8 +29,10 @@ public class WorkoutExerciseService {
     @Transactional
     public WorkoutExercise createNewWorkoutExercise(WorkoutExercise workoutExercise) {
         logger.debug("Creating new workout exercise for user: {}",
-                workoutExercise != null && workoutExercise.getUser() != null ? workoutExercise.getUser().getSub_id() : "null");
-        if (workoutExercise == null || workoutExercise.getUser() == null || workoutExercise.getUser().getSub_id() == null) {
+                workoutExercise != null && workoutExercise.getUser() != null ? workoutExercise.getUser().getSub_id()
+                        : "null");
+        if (workoutExercise == null || workoutExercise.getUser() == null
+                || workoutExercise.getUser().getSub_id() == null) {
             logger.error("Attempted to create workout exercise with null workout exercise, user, or sub_id");
             throw new IllegalArgumentException("Error creating new workout exercise");
         }
@@ -38,7 +40,8 @@ public class WorkoutExerciseService {
         logger.info("Workout exercise created successfully with id: {} for user: {}",
                 savedWorkoutExercise.getWorkout_exercise_id(), savedWorkoutExercise.getUser().getSub_id());
 
-        // Update user's highest weight lifted if workout exercise's highest lift is greater
+        // Update user's highest weight lifted if workout exercise's highest lift is
+        // greater
         updateUserHighestWeightLifted(savedWorkoutExercise);
 
         return savedWorkoutExercise;
@@ -93,7 +96,8 @@ public class WorkoutExerciseService {
 
                     WorkoutExercise savedWorkoutExercise = workoutExerciseRepository.save(existingWorkoutExercise);
 
-                    // Update user's highest weight lifted if workout exercise's highest lift is greater
+                    // Update user's highest weight lifted if workout exercise's highest lift is
+                    // greater
                     updateUserHighestWeightLifted(savedWorkoutExercise);
 
                     return true;
@@ -102,7 +106,8 @@ public class WorkoutExerciseService {
     }
 
     @Transactional
-    public java.util.Optional<WorkoutExercise> updateWorkoutExerciseById(long workoutExerciseId, WorkoutExercise updatedWorkoutExercise) {
+    public java.util.Optional<WorkoutExercise> updateWorkoutExerciseById(long workoutExerciseId,
+            WorkoutExercise updatedWorkoutExercise) {
         logger.debug("Updating workout exercise with id: {}", workoutExerciseId);
         if (updatedWorkoutExercise == null) {
             logger.error("Attempted to update workout exercise with null workout exercise object");
@@ -126,7 +131,8 @@ public class WorkoutExerciseService {
                     WorkoutExercise savedWorkoutExercise = workoutExerciseRepository.save(existingWorkoutExercise);
                     logger.info("Workout exercise updated successfully with id: {}", workoutExerciseId);
 
-                    // Update user's highest weight lifted if workout exercise's highest lift is greater
+                    // Update user's highest weight lifted if workout exercise's highest lift is
+                    // greater
                     updateUserHighestWeightLifted(savedWorkoutExercise);
 
                     return savedWorkoutExercise;
@@ -167,15 +173,18 @@ public class WorkoutExerciseService {
     }
 
     /**
-     * Compares the workout exercise's highest lift with the user's highest weight lifted.
-     * If the workout exercise's highest lift is greater, updates the user's highest weight
+     * Compares the workout exercise's highest lift with the user's highest weight
+     * lifted.
+     * If the workout exercise's highest lift is greater, updates the user's highest
+     * weight
      * lifted.
      * 
      * @param workoutExercise The workout exercise to compare
      */
     @Transactional
     private void updateUserHighestWeightLifted(WorkoutExercise workoutExercise) {
-        if (workoutExercise == null || workoutExercise.getUser() == null || workoutExercise.getUser().getSub_id() == null) {
+        if (workoutExercise == null || workoutExercise.getUser() == null
+                || workoutExercise.getUser().getSub_id() == null) {
             logger.debug("Cannot update user highest weight lifted: workout exercise or user is null");
             return;
         }

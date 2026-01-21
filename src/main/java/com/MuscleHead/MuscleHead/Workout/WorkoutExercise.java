@@ -2,7 +2,7 @@ package com.MuscleHead.MuscleHead.Workout;
 
 import java.util.List;
 
-import com.MuscleHead.MuscleHead.Exercise.Exercise;
+import com.MuscleHead.MuscleHead.Movement.Movement;
 import com.MuscleHead.MuscleHead.User.User;
 
 import jakarta.persistence.Column;
@@ -43,7 +43,7 @@ public class WorkoutExercise {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "exercise_id", nullable = false)
     @NotNull(message = "Exercise is required")
-    private Exercise exercise;
+    private Movement exercise;
 
     @ElementCollection
     private List<String> area_of_activation;

@@ -3,8 +3,8 @@ package com.MuscleHead.MuscleHead.Workout;
 import java.time.Instant;
 import java.util.List;
 
-import com.MuscleHead.MuscleHead.Routine.Routine;
 import com.MuscleHead.MuscleHead.User.User;
+import com.MuscleHead.MuscleHead.WorkoutTemplate.WorkoutTemplate;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -44,7 +44,7 @@ public class WorkoutSession {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "routine_id")
-    private Routine routine;
+    private WorkoutTemplate routine;
 
     @PositiveOrZero(message = "Total weight lifted cannot be negative")
     private Double total_weight_lifted;

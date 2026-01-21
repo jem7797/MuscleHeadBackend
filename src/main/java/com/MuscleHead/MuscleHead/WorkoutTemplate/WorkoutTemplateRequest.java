@@ -1,6 +1,8 @@
-package com.MuscleHead.MuscleHead.Routine;
+package com.MuscleHead.MuscleHead.WorkoutTemplate;
 
 import java.util.List;
+
+import com.MuscleHead.MuscleHead.ExerciseInstance.ExerciseInstanceRequest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -11,12 +13,12 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class RoutineRequest {
+public class WorkoutTemplateRequest {
     @NotBlank(message = "Routine name cannot be blank")
     private String name;
 
     @NotNull(message = "Exercises list is required")
     @NotEmpty(message = "Exercises list cannot be empty")
     @Valid
-    private List<RoutineExerciseRequest> exercises;
+    private List<ExerciseInstanceRequest> exercises;
 }

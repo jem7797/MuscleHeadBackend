@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Routine;
+package com.MuscleHead.MuscleHead.WorkoutTemplate;
 
 import java.util.List;
 
@@ -27,18 +27,18 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("routine/api/")
 @Validated
-public class RoutineController {
+public class WorkoutTemplateController {
 
-    private static final Logger logger = LoggerFactory.getLogger(RoutineController.class);
+    private static final Logger logger = LoggerFactory.getLogger(WorkoutTemplateController.class);
 
     @Autowired
-    private RoutineService routineService;
+    private WorkoutTemplateService routineService;
 
     @Autowired
     private UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<RoutineResponse> createRoutine(@Valid @RequestBody RoutineRequest request) {
+    public ResponseEntity<WorkoutTemplateResponse> createRoutine(@Valid @RequestBody WorkoutTemplateRequest request) {
         logger.info("Creating new routine: {}", request.getName());
 
         // Resolve authenticated user
@@ -55,10 +55,10 @@ public class RoutineController {
                 });
 
         try {
-            Routine createdRoutine = routineService.createRoutine(user, request);
+            WorkoutTemplate createdRoutine = routineService.createRoutine(user, request);
             logger.info("Successfully created routine with id: {} for user: {}", createdRoutine.getId(), subId);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new RoutineResponse(createdRoutine.getId()));
+                    .body(new WorkoutTemplateResponse(createdRoutine.getId()));
         } catch (IllegalArgumentException ex) {
             logger.warn("Failed to create routine: {}", ex.getMessage());
             throw ex;
@@ -69,7 +69,7 @@ public class RoutineController {
     }
 
     @GetMapping("/{routineId}")
-    public ResponseEntity<Routine> getRoutineById(@PathVariable Long routineId) {
+    public ResponseEntity<WorkoutTemplate> getRoutineById(@PathVariable Long routineId) {
         logger.debug("Getting routine by id: {}", routineId);
         return routineService.getRoutineById(routineId)
                 .map(routine -> {
@@ -83,21 +83,21 @@ public class RoutineController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Routine>> getRoutines(@RequestParam(required = false) String subId) {
+    public ResponseEntity<List<WorkoutTemplate>> getRoutines(@RequestParam(required = false) String subId) {
         if (subId != null && !subId.isBlank()) {
             logger.debug("Getting routines for user with sub_id: {}", subId);
-            List<Routine> routines = routineService.getRoutinesByUserSubId(subId);
+            List<WorkoutTemplate> routines = routineService.getRoutinesByUserSubId(subId);
             return ResponseEntity.ok(routines);
         }
         logger.debug("Getting all routines");
-        List<Routine> routines = routineService.getAllRoutines();
+        List<WorkoutTemplate> routines = routineService.getAllRoutines();
         return ResponseEntity.ok(routines);
     }
 
     @PutMapping("/{routineId}")
-    public ResponseEntity<Routine> updateRoutine(
+    public ResponseEntity<WorkoutTemplate> updateRoutine(
             @PathVariable Long routineId,
-            @Valid @RequestBody Routine routine) {
+            @Valid @RequestBody WorkoutTemplate routine) {
         logger.info("Updating routine with id: {}", routineId);
         routine.setId(routineId);
         return routineService.updateRoutine(routine)

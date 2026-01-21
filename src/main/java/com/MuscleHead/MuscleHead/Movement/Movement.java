@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Exercise;
+package com.MuscleHead.MuscleHead.Movement;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "exercises")
 @Data
 @NoArgsConstructor
-public class Exercise {
+public class Movement {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
