@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import com.MuscleHead.MuscleHead.Workout.WorkoutSession;
+import com.MuscleHead.MuscleHead.Workout.SessionLog.SessionLog;
 import com.MuscleHead.MuscleHead.validation.AwsCognitoSubId;
 import com.MuscleHead.MuscleHead.validation.OnCreate;
 import com.MuscleHead.MuscleHead.validation.ValidBirthYear;
@@ -89,7 +89,7 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     @JsonIgnore
-    private List<WorkoutSession> workoutSessions;
+    private List<SessionLog> workoutSessions;
 
     @Max(value = 3)
     @OneToMany

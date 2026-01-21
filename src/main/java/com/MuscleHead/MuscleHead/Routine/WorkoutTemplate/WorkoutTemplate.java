@@ -1,9 +1,9 @@
-package com.MuscleHead.MuscleHead.WorkoutTemplate;
+package com.MuscleHead.MuscleHead.Routine.WorkoutTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.MuscleHead.MuscleHead.ExerciseInstance.ExerciseInstance;
+import com.MuscleHead.MuscleHead.Routine.ExerciseInstance.ExerciseInstance;
 import com.MuscleHead.MuscleHead.User.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

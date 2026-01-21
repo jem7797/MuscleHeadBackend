@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Workout;
+package com.MuscleHead.MuscleHead.Workout.SessionInstance;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,18 +16,18 @@ import com.MuscleHead.MuscleHead.User.UserRepository;
 import jakarta.transaction.Transactional;
 
 @Service
-public class WorkoutExerciseService {
+public class SessionInstanceService {
 
-    private static final Logger logger = LoggerFactory.getLogger(WorkoutExerciseService.class);
+    private static final Logger logger = LoggerFactory.getLogger(SessionInstanceService.class);
 
     @Autowired
-    WorkoutExerciseRepository workoutExerciseRepository;
+    SessionInstanceRepository workoutExerciseRepository;
 
     @Autowired
     UserRepository userRepository;
 
     @Transactional
-    public WorkoutExercise createNewWorkoutExercise(WorkoutExercise workoutExercise) {
+    public SessionInstance createNewWorkoutExercise(SessionInstance workoutExercise) {
         logger.debug("Creating new workout exercise for user: {}",
                 workoutExercise != null && workoutExercise.getUser() != null ? workoutExercise.getUser().getSub_id()
                         : "null");
@@ -36,7 +36,7 @@ public class WorkoutExerciseService {
             logger.error("Attempted to create workout exercise with null workout exercise, user, or sub_id");
             throw new IllegalArgumentException("Error creating new workout exercise");
         }
-        WorkoutExercise savedWorkoutExercise = workoutExerciseRepository.save(workoutExercise);
+        SessionInstance savedWorkoutExercise = workoutExerciseRepository.save(workoutExercise);
         logger.info("Workout exercise created successfully with id: {} for user: {}",
                 savedWorkoutExercise.getWorkout_exercise_id(), savedWorkoutExercise.getUser().getSub_id());
 
@@ -48,7 +48,7 @@ public class WorkoutExerciseService {
     }
 
     @Transactional
-    public boolean deleteWorkoutExercise(WorkoutExercise workoutExercise) {
+    public boolean deleteWorkoutExercise(SessionInstance workoutExercise) {
         if (workoutExercise == null || workoutExercise.getWorkout_exercise_id() == 0) {
             return false;
         }
@@ -76,15 +76,15 @@ public class WorkoutExerciseService {
     }
 
     @Transactional
-    public boolean updateWorkoutExercise(WorkoutExercise updatedWorkoutExercise) {
+    public boolean updateWorkoutExercise(SessionInstance updatedWorkoutExercise) {
         if (updatedWorkoutExercise == null || updatedWorkoutExercise.getWorkout_exercise_id() == 0) {
             return false;
         }
 
         return workoutExerciseRepository.findById(updatedWorkoutExercise.getWorkout_exercise_id())
                 .map(existingWorkoutExercise -> {
-                    existingWorkoutExercise.setNotes(updatedWorkoutExercise.getNotes());
-                    existingWorkoutExercise.setExercise(updatedWorkoutExercise.getExercise());
+            
+                    existingWorkoutExercise.setMovement(updatedWorkoutExercise.getMovement());
                     existingWorkoutExercise.setArea_of_activation(updatedWorkoutExercise.getArea_of_activation());
                     existingWorkoutExercise.setReps(updatedWorkoutExercise.getReps());
                     existingWorkoutExercise.setSets(updatedWorkoutExercise.getSets());
@@ -94,7 +94,7 @@ public class WorkoutExerciseService {
                     existingWorkoutExercise.setUser(updatedWorkoutExercise.getUser());
                     existingWorkoutExercise.setWorkoutSession(updatedWorkoutExercise.getWorkoutSession());
 
-                    WorkoutExercise savedWorkoutExercise = workoutExerciseRepository.save(existingWorkoutExercise);
+                    SessionInstance savedWorkoutExercise = workoutExerciseRepository.save(existingWorkoutExercise);
 
                     // Update user's highest weight lifted if workout exercise's highest lift is
                     // greater
@@ -106,8 +106,8 @@ public class WorkoutExerciseService {
     }
 
     @Transactional
-    public java.util.Optional<WorkoutExercise> updateWorkoutExerciseById(long workoutExerciseId,
-            WorkoutExercise updatedWorkoutExercise) {
+    public java.util.Optional<SessionInstance> updateWorkoutExerciseById(long workoutExerciseId,
+            SessionInstance updatedWorkoutExercise) {
         logger.debug("Updating workout exercise with id: {}", workoutExerciseId);
         if (updatedWorkoutExercise == null) {
             logger.error("Attempted to update workout exercise with null workout exercise object");
@@ -117,8 +117,8 @@ public class WorkoutExerciseService {
         return workoutExerciseRepository.findById(workoutExerciseId)
                 .map(existingWorkoutExercise -> {
                     logger.debug("Found existing workout exercise, updating fields for id: {}", workoutExerciseId);
-                    existingWorkoutExercise.setNotes(updatedWorkoutExercise.getNotes());
-                    existingWorkoutExercise.setExercise(updatedWorkoutExercise.getExercise());
+                   
+                    existingWorkoutExercise.setMovement(updatedWorkoutExercise.getMovement());
                     existingWorkoutExercise.setArea_of_activation(updatedWorkoutExercise.getArea_of_activation());
                     existingWorkoutExercise.setReps(updatedWorkoutExercise.getReps());
                     existingWorkoutExercise.setSets(updatedWorkoutExercise.getSets());
@@ -128,7 +128,7 @@ public class WorkoutExerciseService {
                     existingWorkoutExercise.setUser(updatedWorkoutExercise.getUser());
                     existingWorkoutExercise.setWorkoutSession(updatedWorkoutExercise.getWorkoutSession());
 
-                    WorkoutExercise savedWorkoutExercise = workoutExerciseRepository.save(existingWorkoutExercise);
+                    SessionInstance savedWorkoutExercise = workoutExerciseRepository.save(existingWorkoutExercise);
                     logger.info("Workout exercise updated successfully with id: {}", workoutExerciseId);
 
                     // Update user's highest weight lifted if workout exercise's highest lift is
@@ -139,7 +139,7 @@ public class WorkoutExerciseService {
                 });
     }
 
-    public WorkoutExercise getWorkoutExerciseById(long workoutExerciseId) {
+    public SessionInstance getWorkoutExerciseById(long workoutExerciseId) {
         logger.debug("Getting workout exercise by id: {}", workoutExerciseId);
         return workoutExerciseRepository.findById(workoutExerciseId)
                 .orElseThrow(() -> {
@@ -148,27 +148,27 @@ public class WorkoutExerciseService {
                 });
     }
 
-    public List<WorkoutExercise> getWorkoutExercisesByUserId(String subId) {
+    public List<SessionInstance> getWorkoutExercisesByUserId(String subId) {
         if (subId == null || subId.isBlank()) {
             throw new IllegalArgumentException("User id must not be blank");
         }
         return workoutExerciseRepository.findByUser_SubId(subId);
     }
 
-    public Page<WorkoutExercise> getWorkoutExercisesByUserId(String subId, Pageable pageable) {
+    public Page<SessionInstance> getWorkoutExercisesByUserId(String subId, Pageable pageable) {
         logger.debug("Getting workout exercises for user: {} with page: {}, size: {}",
                 subId, pageable.getPageNumber(), pageable.getPageSize());
         if (subId == null || subId.isBlank()) {
             logger.error("Attempted to get workout exercises with null or blank sub_id");
             throw new IllegalArgumentException("User id must not be blank");
         }
-        Page<WorkoutExercise> workoutExercises = workoutExerciseRepository.findByUser_SubId(subId, pageable);
+        Page<SessionInstance> workoutExercises = workoutExerciseRepository.findByUser_SubId(subId, pageable);
         logger.debug("Found {} workout exercises for user: {} (total: {})",
                 workoutExercises.getNumberOfElements(), subId, workoutExercises.getTotalElements());
         return workoutExercises;
     }
 
-    public List<WorkoutExercise> getWorkoutExercisesBySessionId(long sessionId) {
+    public List<SessionInstance> getWorkoutExercisesBySessionId(long sessionId) {
         return workoutExerciseRepository.findByWorkoutSessionId(sessionId);
     }
 
@@ -182,7 +182,7 @@ public class WorkoutExerciseService {
      * @param workoutExercise The workout exercise to compare
      */
     @Transactional
-    private void updateUserHighestWeightLifted(WorkoutExercise workoutExercise) {
+    private void updateUserHighestWeightLifted(SessionInstance workoutExercise) {
         if (workoutExercise == null || workoutExercise.getUser() == null
                 || workoutExercise.getUser().getSub_id() == null) {
             logger.debug("Cannot update user highest weight lifted: workout exercise or user is null");

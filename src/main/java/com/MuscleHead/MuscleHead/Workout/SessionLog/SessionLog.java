@@ -1,10 +1,11 @@
-package com.MuscleHead.MuscleHead.Workout;
+package com.MuscleHead.MuscleHead.Workout.SessionLog;
 
 import java.time.Instant;
 import java.util.List;
 
+import com.MuscleHead.MuscleHead.Routine.WorkoutTemplate.WorkoutTemplate;
 import com.MuscleHead.MuscleHead.User.User;
-import com.MuscleHead.MuscleHead.WorkoutTemplate.WorkoutTemplate;
+import com.MuscleHead.MuscleHead.Workout.SessionInstance.SessionInstance;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -26,7 +27,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "workout_sessions")
 @Data
 @NoArgsConstructor
-public class WorkoutSession {
+public class SessionLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -56,5 +57,5 @@ public class WorkoutSession {
     private Double total_duration;
 
     @OneToMany(mappedBy = "workoutSession", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<WorkoutExercise> workoutExercises;
+    private List<SessionInstance> workoutExercises;
 }

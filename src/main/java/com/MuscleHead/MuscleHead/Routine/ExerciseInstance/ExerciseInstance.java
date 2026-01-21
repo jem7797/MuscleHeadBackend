@@ -1,7 +1,7 @@
-package com.MuscleHead.MuscleHead.ExerciseInstance;
+package com.MuscleHead.MuscleHead.Routine.ExerciseInstance;
 
 import com.MuscleHead.MuscleHead.Movement.Movement;
-import com.MuscleHead.MuscleHead.WorkoutTemplate.WorkoutTemplate;
+import com.MuscleHead.MuscleHead.Routine.WorkoutTemplate.WorkoutTemplate;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Entity;

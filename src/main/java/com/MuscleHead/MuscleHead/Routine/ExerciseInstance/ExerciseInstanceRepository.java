@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.ExerciseInstance;
+package com.MuscleHead.MuscleHead.Routine.ExerciseInstance;
 
 import java.util.List;
 

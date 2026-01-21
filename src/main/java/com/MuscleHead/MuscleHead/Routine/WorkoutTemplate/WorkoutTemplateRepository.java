@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.WorkoutTemplate;
+package com.MuscleHead.MuscleHead.Routine.WorkoutTemplate;
 
 import java.util.List;
 

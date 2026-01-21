@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Workout;
+package com.MuscleHead.MuscleHead.Workout.SessionLog;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,11 +8,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, Long> {
+public interface SessionLogRepository extends JpaRepository<SessionLog, Long> {
 
     @Query("SELECT ws FROM WorkoutSession ws WHERE ws.user.sub_id = :subId")
-    Page<WorkoutSession> findByUser_SubId(@Param("subId") String subId, Pageable pageable);
+    Page<SessionLog> findByUser_SubId(@Param("subId") String subId, Pageable pageable);
 
     @Query("SELECT ws FROM WorkoutSession ws WHERE ws.user.sub_id = :subId")
-    java.util.List<WorkoutSession> findByUser_SubId(@Param("subId") String subId);
+    java.util.List<SessionLog> findByUser_SubId(@Param("subId") String subId);
 }

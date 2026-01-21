@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Workout;
+package com.MuscleHead.MuscleHead.Routine.WorkoutTemplate;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,6 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkoutSessionResponse {
-    private long sessionId;
+public class WorkoutTemplateResponse {
+    private Long routineId;
 }

@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.WorkoutTemplate;
+package com.MuscleHead.MuscleHead.Routine.WorkoutTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -8,11 +8,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.MuscleHead.MuscleHead.ExerciseInstance.ExerciseInstance;
-import com.MuscleHead.MuscleHead.ExerciseInstance.ExerciseInstanceRepository;
-import com.MuscleHead.MuscleHead.ExerciseInstance.ExerciseInstanceRequest;
 import com.MuscleHead.MuscleHead.Movement.Movement;
 import com.MuscleHead.MuscleHead.Movement.MovementRepository;
+import com.MuscleHead.MuscleHead.Routine.ExerciseInstance.ExerciseInstance;
+import com.MuscleHead.MuscleHead.Routine.ExerciseInstance.ExerciseInstanceRepository;
+import com.MuscleHead.MuscleHead.Routine.ExerciseInstance.ExerciseInstanceRequest;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
 

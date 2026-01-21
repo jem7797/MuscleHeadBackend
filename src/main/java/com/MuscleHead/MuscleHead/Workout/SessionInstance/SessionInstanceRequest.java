@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Workout;
+package com.MuscleHead.MuscleHead.Workout.SessionInstance;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class WorkoutExerciseRequest {
+public class SessionInstanceRequest {
     @NotNull(message = "Exercise ID is required")
     private Long exerciseId;
 

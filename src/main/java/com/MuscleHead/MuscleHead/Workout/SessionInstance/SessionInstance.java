@@ -1,11 +1,11 @@
-package com.MuscleHead.MuscleHead.Workout;
+package com.MuscleHead.MuscleHead.Workout.SessionInstance;
 
 import java.util.List;
 
 import com.MuscleHead.MuscleHead.Movement.Movement;
 import com.MuscleHead.MuscleHead.User.User;
+import com.MuscleHead.MuscleHead.Workout.SessionLog.SessionLog;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "workout_exercises")
 @Data
 @NoArgsConstructor
-public class WorkoutExercise {
+public class SessionInstance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long workout_exercise_id;
@@ -38,12 +38,12 @@ public class WorkoutExercise {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "workout_session_id", nullable = false)
     @NotNull(message = "Workout session is required")
-    private WorkoutSession workoutSession;
+    private SessionLog workoutSession;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "exercise_id", nullable = false)
     @NotNull(message = "Exercise is required")
-    private Movement exercise;
+    private Movement movement;
 
     @ElementCollection
     private List<String> area_of_activation;
@@ -63,5 +63,4 @@ public class WorkoutExercise {
     @PositiveOrZero(message = "Workout highest lift cannot be negative")
     private double workout_highest_lift;
 
-    private String notes;
 }

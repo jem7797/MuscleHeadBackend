@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Workout;
+package com.MuscleHead.MuscleHead.Workout.SessionLog;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,18 +26,18 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("workout-session/api/")
-public class WorkoutSessionController {
+public class SessionLogController {
 
-    private static final Logger logger = LoggerFactory.getLogger(WorkoutSessionController.class);
+    private static final Logger logger = LoggerFactory.getLogger(SessionLogController.class);
 
     @Autowired
-    private WorkoutSessionService workoutSessionService;
+    private SessionLogService workoutSessionService;
 
     @Autowired
     private UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<WorkoutSessionResponse> createWorkoutSession(@Valid @RequestBody WorkoutSessionRequest request) {
+    public ResponseEntity<SessionLogResponse> createWorkoutSession(@Valid @RequestBody SessionLogRequest request) {
         logger.info("Creating new workout session");
         
         // Resolve authenticated user
@@ -54,11 +54,11 @@ public class WorkoutSessionController {
                 });
 
         try {
-            WorkoutSession createdSession = workoutSessionService.createWorkoutSession(user, request);
+            SessionLog createdSession = workoutSessionService.createWorkoutSession(user, request);
             logger.info("Successfully created workout session with id: {} for user: {}",
                     createdSession.getId(), subId);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new WorkoutSessionResponse(createdSession.getId()));
+                    .body(new SessionLogResponse(createdSession.getId()));
         } catch (Exception ex) {
             logger.error("Error creating workout session for user: {}", subId, ex);
             throw ex;
@@ -66,9 +66,9 @@ public class WorkoutSessionController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<WorkoutSession> updateWorkoutSession(
+    public ResponseEntity<SessionLog> updateWorkoutSession(
             @PathVariable("id") long workoutSessionId,
-            @Valid @RequestBody WorkoutSession workoutSession) {
+            @Valid @RequestBody SessionLog workoutSession) {
         logger.info("Updating workout session with id: {}", workoutSessionId);
         workoutSession.setId(workoutSessionId);
         return workoutSessionService.updateWorkoutSessionById(workoutSessionId, workoutSession)
@@ -94,10 +94,10 @@ public class WorkoutSessionController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<WorkoutSession> getWorkoutSessionById(@PathVariable("id") long workoutSessionId) {
+    public ResponseEntity<SessionLog> getWorkoutSessionById(@PathVariable("id") long workoutSessionId) {
         logger.debug("Getting workout session by id: {}", workoutSessionId);
         try {
-            WorkoutSession workoutSession = workoutSessionService.getWorkoutSessionById(workoutSessionId);
+            SessionLog workoutSession = workoutSessionService.getWorkoutSessionById(workoutSessionId);
             logger.debug("Found workout session with id: {}", workoutSessionId);
             return ResponseEntity.ok(workoutSession);
         } catch (RuntimeException ex) {
@@ -107,12 +107,12 @@ public class WorkoutSessionController {
     }
 
     @GetMapping("/user/{subId}")
-    public ResponseEntity<Page<WorkoutSession>> getWorkoutSessionsForUser(
+    public ResponseEntity<Page<SessionLog>> getWorkoutSessionsForUser(
             @PathVariable("subId") String subId,
             @PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
         logger.debug("Getting workout sessions for user: {} with page: {}, size: {}",
                 subId, pageable.getPageNumber(), pageable.getPageSize());
-        Page<WorkoutSession> workoutSessions = workoutSessionService.getWorkoutSessionsByUserId(subId, pageable);
+        Page<SessionLog> workoutSessions = workoutSessionService.getWorkoutSessionsByUserId(subId, pageable);
         logger.debug("Found {} workout sessions for user: {} (page {} of {})",
                 workoutSessions.getNumberOfElements(), subId, workoutSessions.getNumber(), workoutSessions.getTotalPages());
         return ResponseEntity.ok(workoutSessions);
