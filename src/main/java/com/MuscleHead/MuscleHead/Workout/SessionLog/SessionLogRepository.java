@@ -10,9 +10,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SessionLogRepository extends JpaRepository<SessionLog, Long> {
 
-    @Query("SELECT ws FROM WorkoutSession ws WHERE ws.user.sub_id = :subId")
+    @Query("SELECT sl FROM SessionLog sl WHERE sl.user.sub_id = :subId")
     Page<SessionLog> findByUser_SubId(@Param("subId") String subId, Pageable pageable);
 
-    @Query("SELECT ws FROM WorkoutSession ws WHERE ws.user.sub_id = :subId")
+    @Query("SELECT sl FROM SessionLog sl WHERE sl.user.sub_id = :subId")
     java.util.List<SessionLog> findByUser_SubId(@Param("subId") String subId);
 }

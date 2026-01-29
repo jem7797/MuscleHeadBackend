@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import com.MuscleHead.MuscleHead.Rank.Rank;
 import com.MuscleHead.MuscleHead.Workout.SessionLog.SessionLog;
 import com.MuscleHead.MuscleHead.validation.AwsCognitoSubId;
 import com.MuscleHead.MuscleHead.validation.OnCreate;
@@ -13,6 +14,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
@@ -47,6 +50,11 @@ public class User {
     @NotBlank(message = "First name cannot be empty")
     private String first_name;
 
+    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
+    @JoinColumn(name = "rank_id")
+    private Rank rank;
+
+    
     @Positive(message = "Height must be a positive number")
     private Integer height;
 
@@ -76,6 +84,10 @@ public class User {
 
     @PositiveOrZero(message = "XP cannot be negative")
     private double XP = 0;
+
+    @PositiveOrZero(message = "XP cannot be negative")
+    private int level = 1;
+
     private boolean nattyStatus = true; // Default to natty/yes
 
     @Column(updatable = false)

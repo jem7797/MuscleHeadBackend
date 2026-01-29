@@ -25,25 +25,25 @@ import com.MuscleHead.MuscleHead.config.SecurityUtils;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("workout-session/api/")
+@RequestMapping("sessionLog/api/")
 public class SessionLogController {
 
     private static final Logger logger = LoggerFactory.getLogger(SessionLogController.class);
 
     @Autowired
-    private SessionLogService workoutSessionService;
+    private SessionLogService sessionLogService;
 
     @Autowired
     private UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<SessionLogResponse> createWorkoutSession(@Valid @RequestBody SessionLogRequest request) {
-        logger.info("Creating new workout session");
+    public ResponseEntity<SessionLogResponse> createSessionLog(@Valid @RequestBody SessionLogRequest request) {
+        logger.info("Creating new session log");
         
         // Resolve authenticated user
         String subId = SecurityUtils.getCurrentUserSub();
         if (subId == null) {
-            logger.error("Attempted to create workout session without authentication");
+            logger.error("Attempted to create session log without authentication");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -54,67 +54,67 @@ public class SessionLogController {
                 });
 
         try {
-            SessionLog createdSession = workoutSessionService.createWorkoutSession(user, request);
-            logger.info("Successfully created workout session with id: {} for user: {}",
-                    createdSession.getId(), subId);
+            SessionLog createdSessionLog = sessionLogService.createSessionLog(user, request);
+            logger.info("Successfully created session log with id: {} for user: {}",
+                    createdSessionLog.getId(), subId);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new SessionLogResponse(createdSession.getId()));
+                    .body(new SessionLogResponse(createdSessionLog.getId()));
         } catch (Exception ex) {
-            logger.error("Error creating workout session for user: {}", subId, ex);
+            logger.error("Error creating session log for user: {}", subId, ex);
             throw ex;
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SessionLog> updateWorkoutSession(
-            @PathVariable("id") long workoutSessionId,
-            @Valid @RequestBody SessionLog workoutSession) {
-        logger.info("Updating workout session with id: {}", workoutSessionId);
-        workoutSession.setId(workoutSessionId);
-        return workoutSessionService.updateWorkoutSessionById(workoutSessionId, workoutSession)
-                .map(updatedWorkoutSession -> {
-                    logger.info("Successfully updated workout session with id: {}", workoutSessionId);
-                    return ResponseEntity.ok(updatedWorkoutSession);
+    public ResponseEntity<SessionLog> updateSessionLog(
+            @PathVariable("id") long sessionLogId,
+            @Valid @RequestBody SessionLog sessionLog) {
+        logger.info("Updating session log with id: {}", sessionLogId);
+        sessionLog.setId(sessionLogId);
+        return sessionLogService.updateSessionLogById(sessionLogId, sessionLog)
+                .map(updatedSessionLog -> {
+                    logger.info("Successfully updated session log with id: {}", sessionLogId);
+                    return ResponseEntity.ok(updatedSessionLog);
                 })
                 .orElseGet(() -> {
-                    logger.warn("Workout session not found for update: id: {}", workoutSessionId);
+                    logger.warn("Session log not found for update: id: {}", sessionLogId);
                     return ResponseEntity.notFound().build();
                 });
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteWorkoutSession(@PathVariable("id") long workoutSessionId) {
-        logger.info("Deleting workout session with id: {}", workoutSessionId);
-        if (workoutSessionService.deleteWorkoutSessionById(workoutSessionId)) {
-            logger.info("Successfully deleted workout session with id: {}", workoutSessionId);
+    public ResponseEntity<Void> deleteSessionLog(@PathVariable("id") long sessionLogId) {
+        logger.info("Deleting session log with id: {}", sessionLogId);
+        if (sessionLogService.deleteSessionLogById(sessionLogId)) {
+            logger.info("Successfully deleted session log with id: {}", sessionLogId);
             return ResponseEntity.noContent().build();
         }
-        logger.warn("Workout session not found for deletion: id: {}", workoutSessionId);
+        logger.warn("Session log not found for deletion: id: {}", sessionLogId);
         return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SessionLog> getWorkoutSessionById(@PathVariable("id") long workoutSessionId) {
-        logger.debug("Getting workout session by id: {}", workoutSessionId);
+    public ResponseEntity<SessionLog> getSessionLogById(@PathVariable("id") long sessionLogId) {
+        logger.debug("Getting session log by id: {}", sessionLogId);
         try {
-            SessionLog workoutSession = workoutSessionService.getWorkoutSessionById(workoutSessionId);
-            logger.debug("Found workout session with id: {}", workoutSessionId);
-            return ResponseEntity.ok(workoutSession);
+            SessionLog sessionLog = sessionLogService.getSessionLogById(sessionLogId);
+            logger.debug("Found session log with id: {}", sessionLogId);
+            return ResponseEntity.ok(sessionLog);
         } catch (RuntimeException ex) {
-            logger.warn("Workout session not found with id: {}", workoutSessionId);
+            logger.warn("Session log not found with id: {}", sessionLogId);
             throw ex;
         }
     }
 
     @GetMapping("/user/{subId}")
-    public ResponseEntity<Page<SessionLog>> getWorkoutSessionsForUser(
+    public ResponseEntity<Page<SessionLog>> getSessionLogsForUser(
             @PathVariable("subId") String subId,
             @PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
-        logger.debug("Getting workout sessions for user: {} with page: {}, size: {}",
+        logger.debug("Getting session logs for user: {} with page: {}, size: {}",
                 subId, pageable.getPageNumber(), pageable.getPageSize());
-        Page<SessionLog> workoutSessions = workoutSessionService.getWorkoutSessionsByUserId(subId, pageable);
-        logger.debug("Found {} workout sessions for user: {} (page {} of {})",
-                workoutSessions.getNumberOfElements(), subId, workoutSessions.getNumber(), workoutSessions.getTotalPages());
-        return ResponseEntity.ok(workoutSessions);
+        Page<SessionLog> sessionLogs = sessionLogService.getSessionLogsByUserId(subId, pageable);
+        logger.debug("Found {} session logs for user: {} (page {} of {})",
+                sessionLogs.getNumberOfElements(), subId, sessionLogs.getNumber(), sessionLogs.getTotalPages());
+        return ResponseEntity.ok(sessionLogs);
     }
 }

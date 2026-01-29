@@ -12,6 +12,6 @@ public interface WorkoutTemplateRepository extends JpaRepository<WorkoutTemplate
 
     List<WorkoutTemplate> findByUser(User user);
 
-    @Query("SELECT r FROM Routine r WHERE r.user.sub_id = :subId")
+    @Query("SELECT r FROM WorkoutTemplate r WHERE r.user.sub_id = :subId")
     List<WorkoutTemplate> findByUserSub_id(@Param("subId") String subId);
 }

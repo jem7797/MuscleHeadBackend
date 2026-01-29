@@ -21,84 +21,84 @@ public class SessionInstanceService {
     private static final Logger logger = LoggerFactory.getLogger(SessionInstanceService.class);
 
     @Autowired
-    SessionInstanceRepository workoutExerciseRepository;
+    SessionInstanceRepository sessionInstanceRepository;
 
     @Autowired
     UserRepository userRepository;
 
     @Transactional
-    public SessionInstance createNewWorkoutExercise(SessionInstance workoutExercise) {
-        logger.debug("Creating new workout exercise for user: {}",
-                workoutExercise != null && workoutExercise.getUser() != null ? workoutExercise.getUser().getSub_id()
+    public SessionInstance createNewSessionInstance(SessionInstance sessionInstance) {
+        logger.debug("Creating new session instance for user: {}",
+                sessionInstance != null && sessionInstance.getUser() != null ? sessionInstance.getUser().getSub_id()
                         : "null");
-        if (workoutExercise == null || workoutExercise.getUser() == null
-                || workoutExercise.getUser().getSub_id() == null) {
-            logger.error("Attempted to create workout exercise with null workout exercise, user, or sub_id");
-            throw new IllegalArgumentException("Error creating new workout exercise");
+        if (sessionInstance == null || sessionInstance.getUser() == null
+                || sessionInstance.getUser().getSub_id() == null) {
+            logger.error("Attempted to create session instance with null session instance, user, or sub_id");
+            throw new IllegalArgumentException("Error creating new session instance");
         }
-        SessionInstance savedWorkoutExercise = workoutExerciseRepository.save(workoutExercise);
-        logger.info("Workout exercise created successfully with id: {} for user: {}",
-                savedWorkoutExercise.getWorkout_exercise_id(), savedWorkoutExercise.getUser().getSub_id());
+        SessionInstance savedSessionInstance = sessionInstanceRepository.save(sessionInstance);
+        logger.info("Session instance created successfully with id: {} for user: {}",
+                savedSessionInstance.getWorkout_exercise_id(), savedSessionInstance.getUser().getSub_id());
 
-        // Update user's highest weight lifted if workout exercise's highest lift is
+        // Update user's highest weight lifted if session instance's highest lift is
         // greater
-        updateUserHighestWeightLifted(savedWorkoutExercise);
+        updateUserHighestWeightLifted(savedSessionInstance);
 
-        return savedWorkoutExercise;
+        return savedSessionInstance;
     }
 
     @Transactional
-    public boolean deleteWorkoutExercise(SessionInstance workoutExercise) {
-        if (workoutExercise == null || workoutExercise.getWorkout_exercise_id() == 0) {
+    public boolean deleteSessionInstance(SessionInstance sessionInstance) {
+        if (sessionInstance == null || sessionInstance.getWorkout_exercise_id() == 0) {
             return false;
         }
-        if (!workoutExerciseRepository.existsById(workoutExercise.getWorkout_exercise_id())) {
+        if (!sessionInstanceRepository.existsById(sessionInstance.getWorkout_exercise_id())) {
             return false;
         }
-        workoutExerciseRepository.delete(workoutExercise);
+        sessionInstanceRepository.delete(sessionInstance);
         return true;
     }
 
     @Transactional
-    public boolean deleteWorkoutExerciseById(long workoutExerciseId) {
-        logger.debug("Deleting workout exercise with id: {}", workoutExerciseId);
-        if (workoutExerciseId == 0) {
-            logger.warn("Attempted to delete workout exercise with invalid id: 0");
+    public boolean deleteSessionInstanceById(long sessionInstanceId) {
+        logger.debug("Deleting session instance with id: {}", sessionInstanceId);
+        if (sessionInstanceId == 0) {
+            logger.warn("Attempted to delete session instance with invalid id: 0");
             return false;
         }
-        if (!workoutExerciseRepository.existsById(workoutExerciseId)) {
-            logger.warn("Workout exercise not found for deletion: id: {}", workoutExerciseId);
+        if (!sessionInstanceRepository.existsById(sessionInstanceId)) {
+            logger.warn("Session instance not found for deletion: id: {}", sessionInstanceId);
             return false;
         }
-        workoutExerciseRepository.deleteById(workoutExerciseId);
-        logger.info("Workout exercise deleted successfully with id: {}", workoutExerciseId);
+        sessionInstanceRepository.deleteById(sessionInstanceId);
+        logger.info("Session instance deleted successfully with id: {}", sessionInstanceId);
         return true;
     }
 
     @Transactional
-    public boolean updateWorkoutExercise(SessionInstance updatedWorkoutExercise) {
-        if (updatedWorkoutExercise == null || updatedWorkoutExercise.getWorkout_exercise_id() == 0) {
+    public boolean updateSessionInstance(SessionInstance updatedSessionInstance) {
+        if (updatedSessionInstance == null || updatedSessionInstance.getWorkout_exercise_id() == 0) {
             return false;
         }
 
-        return workoutExerciseRepository.findById(updatedWorkoutExercise.getWorkout_exercise_id())
-                .map(existingWorkoutExercise -> {
+        return sessionInstanceRepository.findById(updatedSessionInstance.getWorkout_exercise_id())
+                .map(existingSessionInstance -> {
             
-                    existingWorkoutExercise.setMovement(updatedWorkoutExercise.getMovement());
-                    existingWorkoutExercise.setArea_of_activation(updatedWorkoutExercise.getArea_of_activation());
-                    existingWorkoutExercise.setReps(updatedWorkoutExercise.getReps());
-                    existingWorkoutExercise.setSets(updatedWorkoutExercise.getSets());
-                    existingWorkoutExercise.setDuration(updatedWorkoutExercise.getDuration());
-                    existingWorkoutExercise.setTotal_weight_lifted(updatedWorkoutExercise.getTotal_weight_lifted());
-                    existingWorkoutExercise.setWorkout_highest_lift(updatedWorkoutExercise.getWorkout_highest_lift());
-                    existingWorkoutExercise.setUser(updatedWorkoutExercise.getUser());
-                    existingWorkoutExercise.setWorkoutSession(updatedWorkoutExercise.getWorkoutSession());
+                    existingSessionInstance.setMovement(updatedSessionInstance.getMovement());
+                    existingSessionInstance.setArea_of_activation(updatedSessionInstance.getArea_of_activation());
+                    existingSessionInstance.setReps(updatedSessionInstance.getReps());
+                    existingSessionInstance.setSets(updatedSessionInstance.getSets());
+                    existingSessionInstance.setDuration(updatedSessionInstance.getDuration());
+                    existingSessionInstance.setTotal_weight_lifted(updatedSessionInstance.getTotal_weight_lifted());
+                    existingSessionInstance.setWorkout_highest_lift(updatedSessionInstance.getWorkout_highest_lift());
+                    existingSessionInstance.setUser(updatedSessionInstance.getUser());
+                    existingSessionInstance.setSessionLog(updatedSessionInstance.getSessionLog());
 
-                    SessionInstance savedWorkoutExercise = workoutExerciseRepository.save(existingWorkoutExercise);
+                    SessionInstance savedSessionInstance = sessionInstanceRepository.save(existingSessionInstance);
 
-                    // Update user's highest weight lifted if workout exercise's highest lift is
+                    // Update user's highest weight lifted if session instance's highest lift is
                     // greater
-                    updateUserHighestWeightLifted(savedWorkoutExercise);
+                    updateUserHighestWeightLifted(savedSessionInstance);
 
                     return true;
                 })
@@ -106,113 +106,113 @@ public class SessionInstanceService {
     }
 
     @Transactional
-    public java.util.Optional<SessionInstance> updateWorkoutExerciseById(long workoutExerciseId,
-            SessionInstance updatedWorkoutExercise) {
-        logger.debug("Updating workout exercise with id: {}", workoutExerciseId);
-        if (updatedWorkoutExercise == null) {
-            logger.error("Attempted to update workout exercise with null workout exercise object");
+    public java.util.Optional<SessionInstance> updateSessionInstanceById(long sessionInstanceId,
+            SessionInstance updatedSessionInstance) {
+        logger.debug("Updating session instance with id: {}", sessionInstanceId);
+        if (updatedSessionInstance == null) {
+            logger.error("Attempted to update session instance with null session instance object");
             return java.util.Optional.empty();
         }
 
-        return workoutExerciseRepository.findById(workoutExerciseId)
-                .map(existingWorkoutExercise -> {
-                    logger.debug("Found existing workout exercise, updating fields for id: {}", workoutExerciseId);
+        return sessionInstanceRepository.findById(sessionInstanceId)
+                .map(existingSessionInstance -> {
+                    logger.debug("Found existing session instance, updating fields for id: {}", sessionInstanceId);
                    
-                    existingWorkoutExercise.setMovement(updatedWorkoutExercise.getMovement());
-                    existingWorkoutExercise.setArea_of_activation(updatedWorkoutExercise.getArea_of_activation());
-                    existingWorkoutExercise.setReps(updatedWorkoutExercise.getReps());
-                    existingWorkoutExercise.setSets(updatedWorkoutExercise.getSets());
-                    existingWorkoutExercise.setDuration(updatedWorkoutExercise.getDuration());
-                    existingWorkoutExercise.setTotal_weight_lifted(updatedWorkoutExercise.getTotal_weight_lifted());
-                    existingWorkoutExercise.setWorkout_highest_lift(updatedWorkoutExercise.getWorkout_highest_lift());
-                    existingWorkoutExercise.setUser(updatedWorkoutExercise.getUser());
-                    existingWorkoutExercise.setWorkoutSession(updatedWorkoutExercise.getWorkoutSession());
+                    existingSessionInstance.setMovement(updatedSessionInstance.getMovement());
+                    existingSessionInstance.setArea_of_activation(updatedSessionInstance.getArea_of_activation());
+                    existingSessionInstance.setReps(updatedSessionInstance.getReps());
+                    existingSessionInstance.setSets(updatedSessionInstance.getSets());
+                    existingSessionInstance.setDuration(updatedSessionInstance.getDuration());
+                    existingSessionInstance.setTotal_weight_lifted(updatedSessionInstance.getTotal_weight_lifted());
+                    existingSessionInstance.setWorkout_highest_lift(updatedSessionInstance.getWorkout_highest_lift());
+                    existingSessionInstance.setUser(updatedSessionInstance.getUser());
+                    existingSessionInstance.setSessionLog(updatedSessionInstance.getSessionLog());
 
-                    SessionInstance savedWorkoutExercise = workoutExerciseRepository.save(existingWorkoutExercise);
-                    logger.info("Workout exercise updated successfully with id: {}", workoutExerciseId);
+                    SessionInstance savedSessionInstance = sessionInstanceRepository.save(existingSessionInstance);
+                    logger.info("Session instance updated successfully with id: {}", sessionInstanceId);
 
-                    // Update user's highest weight lifted if workout exercise's highest lift is
+                    // Update user's highest weight lifted if session instance's highest lift is
                     // greater
-                    updateUserHighestWeightLifted(savedWorkoutExercise);
+                    updateUserHighestWeightLifted(savedSessionInstance);
 
-                    return savedWorkoutExercise;
+                    return savedSessionInstance;
                 });
     }
 
-    public SessionInstance getWorkoutExerciseById(long workoutExerciseId) {
-        logger.debug("Getting workout exercise by id: {}", workoutExerciseId);
-        return workoutExerciseRepository.findById(workoutExerciseId)
+    public SessionInstance getSessionInstanceById(long sessionInstanceId) {
+        logger.debug("Getting session instance by id: {}", sessionInstanceId);
+        return sessionInstanceRepository.findById(sessionInstanceId)
                 .orElseThrow(() -> {
-                    logger.warn("Workout exercise not found with id: {}", workoutExerciseId);
-                    return new RuntimeException("Workout exercise not found: " + workoutExerciseId);
+                    logger.warn("Session instance not found with id: {}", sessionInstanceId);
+                    return new RuntimeException("Session instance not found: " + sessionInstanceId);
                 });
     }
 
-    public List<SessionInstance> getWorkoutExercisesByUserId(String subId) {
+    public List<SessionInstance> getSessionInstancesByUserId(String subId) {
         if (subId == null || subId.isBlank()) {
             throw new IllegalArgumentException("User id must not be blank");
         }
-        return workoutExerciseRepository.findByUser_SubId(subId);
+        return sessionInstanceRepository.findByUser_SubId(subId);
     }
 
-    public Page<SessionInstance> getWorkoutExercisesByUserId(String subId, Pageable pageable) {
-        logger.debug("Getting workout exercises for user: {} with page: {}, size: {}",
+    public Page<SessionInstance> getSessionInstancesByUserId(String subId, Pageable pageable) {
+        logger.debug("Getting session instances for user: {} with page: {}, size: {}",
                 subId, pageable.getPageNumber(), pageable.getPageSize());
         if (subId == null || subId.isBlank()) {
-            logger.error("Attempted to get workout exercises with null or blank sub_id");
+            logger.error("Attempted to get session instances with null or blank sub_id");
             throw new IllegalArgumentException("User id must not be blank");
         }
-        Page<SessionInstance> workoutExercises = workoutExerciseRepository.findByUser_SubId(subId, pageable);
-        logger.debug("Found {} workout exercises for user: {} (total: {})",
-                workoutExercises.getNumberOfElements(), subId, workoutExercises.getTotalElements());
-        return workoutExercises;
+        Page<SessionInstance> sessionInstances = sessionInstanceRepository.findByUser_SubId(subId, pageable);
+        logger.debug("Found {} session instances for user: {} (total: {})",
+                sessionInstances.getNumberOfElements(), subId, sessionInstances.getTotalElements());
+        return sessionInstances;
     }
 
-    public List<SessionInstance> getWorkoutExercisesBySessionId(long sessionId) {
-        return workoutExerciseRepository.findByWorkoutSessionId(sessionId);
+    public List<SessionInstance> getSessionInstancesBySessionId(long sessionId) {
+        return sessionInstanceRepository.findByWorkoutSessionId(sessionId);
     }
 
     /**
-     * Compares the workout exercise's highest lift with the user's highest weight
+     * Compares the session instance's highest lift with the user's highest weight
      * lifted.
-     * If the workout exercise's highest lift is greater, updates the user's highest
+     * If the session instance's highest lift is greater, updates the user's highest
      * weight
      * lifted.
      * 
-     * @param workoutExercise The workout exercise to compare
+     * @param sessionInstance The session instance to compare
      */
     @Transactional
-    private void updateUserHighestWeightLifted(SessionInstance workoutExercise) {
-        if (workoutExercise == null || workoutExercise.getUser() == null
-                || workoutExercise.getUser().getSub_id() == null) {
-            logger.debug("Cannot update user highest weight lifted: workout exercise or user is null");
+    private void updateUserHighestWeightLifted(SessionInstance sessionInstance) {
+        if (sessionInstance == null || sessionInstance.getUser() == null
+                || sessionInstance.getUser().getSub_id() == null) {
+            logger.debug("Cannot update user highest weight lifted: session instance or user is null");
             return;
         }
 
-        double workoutHighestLift = workoutExercise.getWorkout_highest_lift();
-        if (workoutHighestLift <= 0) {
-            logger.debug("Workout exercise highest lift is 0 or negative, skipping update");
+        double sessionHighestLift = sessionInstance.getWorkout_highest_lift();
+        if (sessionHighestLift <= 0) {
+            logger.debug("Session instance highest lift is 0 or negative, skipping update");
             return;
         }
 
-        Optional<User> userOpt = userRepository.findById(workoutExercise.getUser().getSub_id());
+        Optional<User> userOpt = userRepository.findById(sessionInstance.getUser().getSub_id());
         if (userOpt.isEmpty()) {
-            logger.warn("User not found with sub_id: {}", workoutExercise.getUser().getSub_id());
+            logger.warn("User not found with sub_id: {}", sessionInstance.getUser().getSub_id());
             return;
         }
 
         User user = userOpt.get();
         double userHighestWeightLifted = user.getHighest_weight_lifted();
 
-        if (workoutHighestLift > userHighestWeightLifted) {
+        if (sessionHighestLift > userHighestWeightLifted) {
             logger.info("Updating user's highest weight lifted from {} to {} for user: {}",
-                    userHighestWeightLifted, workoutHighestLift, user.getSub_id());
-            user.setHighest_weight_lifted(workoutHighestLift);
+                    userHighestWeightLifted, sessionHighestLift, user.getSub_id());
+            user.setHighest_weight_lifted(sessionHighestLift);
             userRepository.save(user);
         } else {
             logger.debug(
-                    "Workout exercise highest lift ({}) is not greater than user's highest weight lifted ({}), no update needed",
-                    workoutHighestLift, userHighestWeightLifted);
+                    "Session instance highest lift ({}) is not greater than user's highest weight lifted ({}), no update needed",
+                    sessionHighestLift, userHighestWeightLifted);
         }
     }
 }

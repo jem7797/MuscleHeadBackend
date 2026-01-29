@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class WorkoutTemplateResponse {
-    private Long routineId;
+    private Long workoutTemplateId;
 }

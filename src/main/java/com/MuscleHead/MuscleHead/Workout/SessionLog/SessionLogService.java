@@ -30,10 +30,10 @@ public class SessionLogService {
     private static final Logger logger = LoggerFactory.getLogger(SessionLogService.class);
 
     @Autowired
-    SessionLogRepository workoutSessionRepository;
+    SessionLogRepository sessionLogRepository;
 
     @Autowired
-    SessionInstanceRepository workoutExerciseRepository;
+    SessionInstanceRepository sessionInstanceRepository;
 
     @Autowired
     UserRepository userRepository;
@@ -42,40 +42,40 @@ public class SessionLogService {
     MovementRepository exerciseRepository;
 
     @Autowired
-    WorkoutTemplateRepository routineRepository;
+    WorkoutTemplateRepository workoutTemplateRepository;
 
     @Transactional
-    public SessionLog createWorkoutSession(User user, SessionLogRequest request) {
-        logger.debug("Creating new workout session for user: {}", user != null ? user.getSub_id() : "null");
+    public SessionLog createSessionLog(User user, SessionLogRequest request) {
+        logger.debug("Creating new session log for user: {}", user != null ? user.getSub_id() : "null");
         
         if (user == null || user.getSub_id() == null) {
-            logger.error("Attempted to create workout session with null user or sub_id");
+            logger.error("Attempted to create session log with null user or sub_id");
             throw new IllegalArgumentException("User is required");
         }
         
         if (request == null || request.getExercises() == null || request.getExercises().isEmpty()) {
-            logger.error("Attempted to create workout session with null or empty exercises list");
+            logger.error("Attempted to create session log with null or empty exercises list");
             throw new IllegalArgumentException("Exercises list is required and cannot be empty");
         }
 
-        // Create WorkoutSession
-        SessionLog session = new SessionLog();
-        session.setUser(user);
-        session.setDate(Instant.now());
-        session.setNotes(request.getNotes());
+        // Create SessionLog
+        SessionLog sessionLog = new SessionLog();
+        sessionLog.setUser(user);
+        sessionLog.setDate(Instant.now());
+        sessionLog.setNotes(request.getNotes());
         
         // Set routine if provided
         if (request.getRoutineId() != null) {
-            WorkoutTemplate routine = routineRepository.findById(request.getRoutineId())
+            WorkoutTemplate routine = workoutTemplateRepository.findById(request.getRoutineId())
                     .orElseThrow(() -> {
                         logger.warn("Routine not found with id: {}", request.getRoutineId());
                         return new IllegalArgumentException("Routine not found: " + request.getRoutineId());
                     });
-            session.setRoutine(routine);
+            sessionLog.setRoutine(routine);
         }
 
-        // Create WorkoutExercise entities
-        List<SessionInstance> workoutExercises = new ArrayList<>();
+        // Create SessionInstance entities
+        List<SessionInstance> sessionInstances = new ArrayList<>();
         double totalWeightLifted = 0.0;
         double sessionHighestLift = 0.0;
         double totalDuration = 0.0;
@@ -88,19 +88,19 @@ public class SessionLogService {
                         return new IllegalArgumentException("Exercise not found: " + exerciseRequest.getExerciseId());
                     });
 
-            // Create WorkoutExercise
-            SessionInstance workoutExercise = new SessionInstance();
-            workoutExercise.setUser(user);
-            workoutExercise.setWorkoutSession(session);
-            workoutExercise.setMovement(exercise);
-            workoutExercise.setSets(exerciseRequest.getSets());
-            workoutExercise.setReps(exerciseRequest.getReps());
+            // Create SessionInstance
+            SessionInstance sessionInstance = new SessionInstance();
+            sessionInstance.setUser(user);
+            sessionInstance.setSessionLog(sessionLog);
+            sessionInstance.setMovement(exercise);
+            sessionInstance.setSets(exerciseRequest.getSets());
+            sessionInstance.setReps(exerciseRequest.getReps());
             
             // Calculate weight-related fields
             double weight = exerciseRequest.getWeight();
             double exerciseTotalWeight = weight * exerciseRequest.getSets() * exerciseRequest.getReps();
-            workoutExercise.setWorkout_highest_lift(weight);
-            workoutExercise.setTotal_weight_lifted(exerciseTotalWeight);
+            sessionInstance.setWorkout_highest_lift(weight);
+            sessionInstance.setTotal_weight_lifted(exerciseTotalWeight);
             
             // Update session aggregates
             totalWeightLifted += exerciseTotalWeight;
@@ -109,136 +109,136 @@ public class SessionLogService {
             }
             // Duration is optional - assume 0 if not provided in DTO
 
-            workoutExercises.add(workoutExercise);
+            sessionInstances.add(sessionInstance);
         }
 
         // Set aggregates on session
-        session.setTotal_weight_lifted(totalWeightLifted);
-        session.setSession_highest_lift(sessionHighestLift);
-        session.setTotal_duration(totalDuration);
-        session.setWorkoutExercises(workoutExercises);
+        sessionLog.setTotal_weight_lifted(totalWeightLifted);
+        sessionLog.setSession_highest_lift(sessionHighestLift);
+        sessionLog.setTotal_duration(totalDuration);
+        sessionLog.setSessionInstances(sessionInstances);
 
-        // Save session (cascade will save exercises)
-        SessionLog savedSession = workoutSessionRepository.save(session);
-        logger.info("Workout session created successfully with id: {} for user: {} with {} exercises",
-                savedSession.getId(), savedSession.getUser().getSub_id(), workoutExercises.size());
+        // Save session log (cascade will save exercises)
+        SessionLog savedSessionLog = sessionLogRepository.save(sessionLog);
+        logger.info("Session log created successfully with id: {} for user: {} with {} exercises",
+                savedSessionLog.getId(), savedSessionLog.getUser().getSub_id(), sessionInstances.size());
         
-        return savedSession;
+        return savedSessionLog;
     }
 
     @Transactional
-    public SessionLog createNewWorkoutSession(SessionLog workoutSession) {
-        logger.debug("Creating new workout session for user: {}",
-                workoutSession != null && workoutSession.getUser() != null ? workoutSession.getUser().getSub_id() : "null");
-        if (workoutSession == null || workoutSession.getUser() == null || workoutSession.getUser().getSub_id() == null) {
-            logger.error("Attempted to create workout session with null workout session, user, or sub_id");
-            throw new IllegalArgumentException("Error creating new workout session");
+    public SessionLog createNewSessionLog(SessionLog sessionLog) {
+        logger.debug("Creating new session log for user: {}",
+                sessionLog != null && sessionLog.getUser() != null ? sessionLog.getUser().getSub_id() : "null");
+        if (sessionLog == null || sessionLog.getUser() == null || sessionLog.getUser().getSub_id() == null) {
+            logger.error("Attempted to create session log with null session log, user, or sub_id");
+            throw new IllegalArgumentException("Error creating new session log");
         }
-        SessionLog savedWorkoutSession = workoutSessionRepository.save(workoutSession);
-        logger.info("Workout session created successfully with id: {} for user: {}",
-                savedWorkoutSession.getId(), savedWorkoutSession.getUser().getSub_id());
-        return savedWorkoutSession;
+        SessionLog savedSessionLog = sessionLogRepository.save(sessionLog);
+        logger.info("Session log created successfully with id: {} for user: {}",
+                savedSessionLog.getId(), savedSessionLog.getUser().getSub_id());
+        return savedSessionLog;
     }
 
     @Transactional
-    public boolean deleteWorkoutSession(SessionLog workoutSession) {
-        if (workoutSession == null || workoutSession.getId() == 0) {
+    public boolean deleteSessionLog(SessionLog sessionLog) {
+        if (sessionLog == null || sessionLog.getId() == 0) {
             return false;
         }
-        if (!workoutSessionRepository.existsById(workoutSession.getId())) {
+        if (!sessionLogRepository.existsById(sessionLog.getId())) {
             return false;
         }
-        workoutSessionRepository.delete(workoutSession);
+        sessionLogRepository.delete(sessionLog);
         return true;
     }
 
     @Transactional
-    public boolean deleteWorkoutSessionById(long workoutSessionId) {
-        logger.debug("Deleting workout session with id: {}", workoutSessionId);
-        if (workoutSessionId == 0) {
-            logger.warn("Attempted to delete workout session with invalid id: 0");
+    public boolean deleteSessionLogById(long sessionLogId) {
+        logger.debug("Deleting session log with id: {}", sessionLogId);
+        if (sessionLogId == 0) {
+            logger.warn("Attempted to delete session log with invalid id: 0");
             return false;
         }
-        if (!workoutSessionRepository.existsById(workoutSessionId)) {
-            logger.warn("Workout session not found for deletion: id: {}", workoutSessionId);
+        if (!sessionLogRepository.existsById(sessionLogId)) {
+            logger.warn("Session log not found for deletion: id: {}", sessionLogId);
             return false;
         }
-        workoutSessionRepository.deleteById(workoutSessionId);
-        logger.info("Workout session deleted successfully with id: {}", workoutSessionId);
+        sessionLogRepository.deleteById(sessionLogId);
+        logger.info("Session log deleted successfully with id: {}", sessionLogId);
         return true;
     }
 
     @Transactional
-    public boolean updateWorkoutSession(SessionLog updatedWorkoutSession) {
-        if (updatedWorkoutSession == null || updatedWorkoutSession.getId() == 0) {
+    public boolean updateSessionLog(SessionLog updatedSessionLog) {
+        if (updatedSessionLog == null || updatedSessionLog.getId() == 0) {
             return false;
         }
 
-        return workoutSessionRepository.findById(updatedWorkoutSession.getId())
-                .map(existingWorkoutSession -> {
-                    existingWorkoutSession.setNotes(updatedWorkoutSession.getNotes());
-                    existingWorkoutSession.setRoutine(updatedWorkoutSession.getRoutine());
-                    existingWorkoutSession.setTotal_weight_lifted(updatedWorkoutSession.getTotal_weight_lifted());
-                    existingWorkoutSession.setSession_highest_lift(updatedWorkoutSession.getSession_highest_lift());
-                    existingWorkoutSession.setTotal_duration(updatedWorkoutSession.getTotal_duration());
-                    existingWorkoutSession.setUser(updatedWorkoutSession.getUser());
+        return sessionLogRepository.findById(updatedSessionLog.getId())
+                .map(existingSessionLog -> {
+                    existingSessionLog.setNotes(updatedSessionLog.getNotes());
+                    existingSessionLog.setRoutine(updatedSessionLog.getRoutine());
+                    existingSessionLog.setTotal_weight_lifted(updatedSessionLog.getTotal_weight_lifted());
+                    existingSessionLog.setSession_highest_lift(updatedSessionLog.getSession_highest_lift());
+                    existingSessionLog.setTotal_duration(updatedSessionLog.getTotal_duration());
+                    existingSessionLog.setUser(updatedSessionLog.getUser());
 
-                    SessionLog savedWorkoutSession = workoutSessionRepository.save(existingWorkoutSession);
+                    SessionLog savedSessionLog = sessionLogRepository.save(existingSessionLog);
                     return true;
                 })
                 .orElse(false);
     }
 
     @Transactional
-    public Optional<SessionLog> updateWorkoutSessionById(long workoutSessionId, SessionLog updatedWorkoutSession) {
-        logger.debug("Updating workout session with id: {}", workoutSessionId);
-        if (updatedWorkoutSession == null) {
-            logger.error("Attempted to update workout session with null workout session object");
+    public Optional<SessionLog> updateSessionLogById(long sessionLogId, SessionLog updatedSessionLog) {
+        logger.debug("Updating session log with id: {}", sessionLogId);
+        if (updatedSessionLog == null) {
+            logger.error("Attempted to update session log with null session log object");
             return Optional.empty();
         }
 
-        return workoutSessionRepository.findById(workoutSessionId)
-                .map(existingWorkoutSession -> {
-                    logger.debug("Found existing workout session, updating fields for id: {}", workoutSessionId);
-                    existingWorkoutSession.setNotes(updatedWorkoutSession.getNotes());
-                    existingWorkoutSession.setRoutine(updatedWorkoutSession.getRoutine());
-                    existingWorkoutSession.setTotal_weight_lifted(updatedWorkoutSession.getTotal_weight_lifted());
-                    existingWorkoutSession.setSession_highest_lift(updatedWorkoutSession.getSession_highest_lift());
-                    existingWorkoutSession.setTotal_duration(updatedWorkoutSession.getTotal_duration());
-                    existingWorkoutSession.setUser(updatedWorkoutSession.getUser());
+        return sessionLogRepository.findById(sessionLogId)
+                .map(existingSessionLog -> {
+                    logger.debug("Found existing session log, updating fields for id: {}", sessionLogId);
+                    existingSessionLog.setNotes(updatedSessionLog.getNotes());
+                    existingSessionLog.setRoutine(updatedSessionLog.getRoutine());
+                    existingSessionLog.setTotal_weight_lifted(updatedSessionLog.getTotal_weight_lifted());
+                    existingSessionLog.setSession_highest_lift(updatedSessionLog.getSession_highest_lift());
+                    existingSessionLog.setTotal_duration(updatedSessionLog.getTotal_duration());
+                    existingSessionLog.setUser(updatedSessionLog.getUser());
 
-                    SessionLog savedWorkoutSession = workoutSessionRepository.save(existingWorkoutSession);
-                    logger.info("Workout session updated successfully with id: {}", workoutSessionId);
-                    return savedWorkoutSession;
+                    SessionLog savedSessionLog = sessionLogRepository.save(existingSessionLog);
+                    logger.info("Session log updated successfully with id: {}", sessionLogId);
+                    return savedSessionLog;
                 });
     }
 
-    public SessionLog getWorkoutSessionById(long workoutSessionId) {
-        logger.debug("Getting workout session by id: {}", workoutSessionId);
-        return workoutSessionRepository.findById(workoutSessionId)
+    public SessionLog getSessionLogById(long sessionLogId) {
+        logger.debug("Getting session log by id: {}", sessionLogId);
+        return sessionLogRepository.findById(sessionLogId)
                 .orElseThrow(() -> {
-                    logger.warn("Workout session not found with id: {}", workoutSessionId);
-                    return new RuntimeException("Workout session not found: " + workoutSessionId);
+                    logger.warn("Session log not found with id: {}", sessionLogId);
+                    return new RuntimeException("Session log not found: " + sessionLogId);
                 });
     }
 
-    public List<SessionLog> getWorkoutSessionsByUserId(String subId) {
+    public List<SessionLog> getSessionLogsByUserId(String subId) {
         if (subId == null || subId.isBlank()) {
             throw new IllegalArgumentException("User id must not be blank");
         }
-        return workoutSessionRepository.findByUser_SubId(subId);
+        return sessionLogRepository.findByUser_SubId(subId);
     }
 
-    public Page<SessionLog> getWorkoutSessionsByUserId(String subId, Pageable pageable) {
-        logger.debug("Getting workout sessions for user: {} with page: {}, size: {}",
+    public Page<SessionLog> getSessionLogsByUserId(String subId, Pageable pageable) {
+        logger.debug("Getting session logs for user: {} with page: {}, size: {}",
                 subId, pageable.getPageNumber(), pageable.getPageSize());
         if (subId == null || subId.isBlank()) {
-            logger.error("Attempted to get workout sessions with null or blank sub_id");
+            logger.error("Attempted to get session logs with null or blank sub_id");
             throw new IllegalArgumentException("User id must not be blank");
         }
-        Page<SessionLog> workoutSessions = workoutSessionRepository.findByUser_SubId(subId, pageable);
-        logger.debug("Found {} workout sessions for user: {} (total: {})",
-                workoutSessions.getNumberOfElements(), subId, workoutSessions.getTotalElements());
-        return workoutSessions;
+        Page<SessionLog> sessionLogs = sessionLogRepository.findByUser_SubId(subId, pageable);
+        logger.debug("Found {} session logs for user: {} (total: {})",
+                sessionLogs.getNumberOfElements(), subId, sessionLogs.getTotalElements());
+        return sessionLogs;
     }
 }

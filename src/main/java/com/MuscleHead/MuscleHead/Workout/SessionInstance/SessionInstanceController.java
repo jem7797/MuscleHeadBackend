@@ -20,80 +20,80 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("workout-exercise/api/")
+@RequestMapping("sessionInstance/api/")
 public class SessionInstanceController {
 
     private static final Logger logger = LoggerFactory.getLogger(SessionInstanceController.class);
 
     @Autowired
-    private SessionInstanceService workoutExerciseService;
+    private SessionInstanceService sessionInstanceService;
 
     @PostMapping
-    public ResponseEntity<SessionInstance> createWorkoutExercise(@Valid @RequestBody SessionInstance workoutExercise) {
-        logger.info("Creating new workout exercise for user: {}",
-                workoutExercise.getUser() != null ? workoutExercise.getUser().getSub_id() : "null");
+    public ResponseEntity<SessionInstance> createSessionInstance(@Valid @RequestBody SessionInstance sessionInstance) {
+        logger.info("Creating new session instance for user: {}",
+                sessionInstance.getUser() != null ? sessionInstance.getUser().getSub_id() : "null");
         try {
-            SessionInstance createdWorkoutExercise = workoutExerciseService.createNewWorkoutExercise(workoutExercise);
-            logger.info("Successfully created workout exercise with id: {} for user: {}",
-                    createdWorkoutExercise.getWorkout_exercise_id(), createdWorkoutExercise.getUser().getSub_id());
-            return ResponseEntity.ok(createdWorkoutExercise);
+            SessionInstance createdSessionInstance = sessionInstanceService.createNewSessionInstance(sessionInstance);
+            logger.info("Successfully created session instance with id: {} for user: {}",
+                    createdSessionInstance.getWorkout_exercise_id(), createdSessionInstance.getUser().getSub_id());
+            return ResponseEntity.ok(createdSessionInstance);
         } catch (Exception ex) {
-            logger.error("Error creating workout exercise for user: {}",
-                    workoutExercise.getUser() != null ? workoutExercise.getUser().getSub_id() : "null", ex);
+            logger.error("Error creating session instance for user: {}",
+                    sessionInstance.getUser() != null ? sessionInstance.getUser().getSub_id() : "null", ex);
             throw ex;
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SessionInstance> updateWorkoutExercise(
-            @PathVariable("id") long workoutExerciseId,
-            @Valid @RequestBody SessionInstance workoutExercise) {
-        logger.info("Updating workout exercise with id: {}", workoutExerciseId);
-        workoutExercise.setWorkout_exercise_id(workoutExerciseId);
-        return workoutExerciseService.updateWorkoutExerciseById(workoutExerciseId, workoutExercise)
-                .map(updatedWorkoutExercise -> {
-                    logger.info("Successfully updated workout exercise with id: {}", workoutExerciseId);
-                    return ResponseEntity.ok(updatedWorkoutExercise);
+    public ResponseEntity<SessionInstance> updateSessionInstance(
+            @PathVariable("id") long sessionInstanceId,
+            @Valid @RequestBody SessionInstance sessionInstance) {
+        logger.info("Updating session instance with id: {}", sessionInstanceId);
+        sessionInstance.setWorkout_exercise_id(sessionInstanceId);
+        return sessionInstanceService.updateSessionInstanceById(sessionInstanceId, sessionInstance)
+                .map(updatedSessionInstance -> {
+                    logger.info("Successfully updated session instance with id: {}", sessionInstanceId);
+                    return ResponseEntity.ok(updatedSessionInstance);
                 })
                 .orElseGet(() -> {
-                    logger.warn("Workout exercise not found for update: id: {}", workoutExerciseId);
+                    logger.warn("Session instance not found for update: id: {}", sessionInstanceId);
                     return ResponseEntity.notFound().build();
                 });
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteWorkoutExercise(@PathVariable("id") long workoutExerciseId) {
-        logger.info("Deleting workout exercise with id: {}", workoutExerciseId);
-        if (workoutExerciseService.deleteWorkoutExerciseById(workoutExerciseId)) {
-            logger.info("Successfully deleted workout exercise with id: {}", workoutExerciseId);
+    public ResponseEntity<Void> deleteSessionInstance(@PathVariable("id") long sessionInstanceId) {
+        logger.info("Deleting session instance with id: {}", sessionInstanceId);
+        if (sessionInstanceService.deleteSessionInstanceById(sessionInstanceId)) {
+            logger.info("Successfully deleted session instance with id: {}", sessionInstanceId);
             return ResponseEntity.noContent().build();
         }
-        logger.warn("Workout exercise not found for deletion: id: {}", workoutExerciseId);
+        logger.warn("Session instance not found for deletion: id: {}", sessionInstanceId);
         return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SessionInstance> getWorkoutExerciseById(@PathVariable("id") long workoutExerciseId) {
-        logger.debug("Getting workout exercise by id: {}", workoutExerciseId);
+    public ResponseEntity<SessionInstance> getSessionInstanceById(@PathVariable("id") long sessionInstanceId) {
+        logger.debug("Getting session instance by id: {}", sessionInstanceId);
         try {
-            SessionInstance workoutExercise = workoutExerciseService.getWorkoutExerciseById(workoutExerciseId);
-            logger.debug("Found workout exercise with id: {}", workoutExerciseId);
-            return ResponseEntity.ok(workoutExercise);
+            SessionInstance sessionInstance = sessionInstanceService.getSessionInstanceById(sessionInstanceId);
+            logger.debug("Found session instance with id: {}", sessionInstanceId);
+            return ResponseEntity.ok(sessionInstance);
         } catch (RuntimeException ex) {
-            logger.warn("Workout exercise not found with id: {}", workoutExerciseId);
+            logger.warn("Session instance not found with id: {}", sessionInstanceId);
             throw ex;
         }
     }
 
     @GetMapping("/user/{subId}")
-    public ResponseEntity<Page<SessionInstance>> getWorkoutExercisesForUser(
+    public ResponseEntity<Page<SessionInstance>> getSessionInstancesForUser(
             @PathVariable("subId") String subId,
             @PageableDefault(size = 10, sort = "workout_exercise_id", direction = Sort.Direction.DESC) Pageable pageable) {
-        logger.debug("Getting workout exercises for user: {} with page: {}, size: {}",
+        logger.debug("Getting session instances for user: {} with page: {}, size: {}",
                 subId, pageable.getPageNumber(), pageable.getPageSize());
-        Page<SessionInstance> workoutExercises = workoutExerciseService.getWorkoutExercisesByUserId(subId, pageable);
-        logger.debug("Found {} workout exercises for user: {} (page {} of {})",
-                workoutExercises.getNumberOfElements(), subId, workoutExercises.getNumber(), workoutExercises.getTotalPages());
-        return ResponseEntity.ok(workoutExercises);
+        Page<SessionInstance> sessionInstances = sessionInstanceService.getSessionInstancesByUserId(subId, pageable);
+        logger.debug("Found {} session instances for user: {} (page {} of {})",
+                sessionInstances.getNumberOfElements(), subId, sessionInstances.getNumber(), sessionInstances.getTotalPages());
+        return ResponseEntity.ok(sessionInstances);
     }
 }

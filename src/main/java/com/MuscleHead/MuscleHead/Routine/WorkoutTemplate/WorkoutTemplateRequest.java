@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class WorkoutTemplateRequest {
-    @NotBlank(message = "Routine name cannot be blank")
+    @NotBlank(message = "WorkoutTemplate name cannot be blank")
     private String name;
 
     @NotNull(message = "Exercises list is required")

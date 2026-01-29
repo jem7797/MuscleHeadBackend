@@ -25,26 +25,26 @@ import com.MuscleHead.MuscleHead.config.SecurityUtils;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("routine/api/")
+@RequestMapping("workoutTemplate/api/")
 @Validated
 public class WorkoutTemplateController {
 
     private static final Logger logger = LoggerFactory.getLogger(WorkoutTemplateController.class);
 
     @Autowired
-    private WorkoutTemplateService routineService;
+    private WorkoutTemplateService workoutTemplate;
 
     @Autowired
     private UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<WorkoutTemplateResponse> createRoutine(@Valid @RequestBody WorkoutTemplateRequest request) {
-        logger.info("Creating new routine: {}", request.getName());
+    public ResponseEntity<WorkoutTemplateResponse> createWorkoutTemplate(@Valid @RequestBody WorkoutTemplateRequest request) {
+        logger.info("Creating new workout template: {}", request.getName());
 
         // Resolve authenticated user
         String subId = SecurityUtils.getCurrentUserSub();
         if (subId == null) {
-            logger.error("Attempted to create routine without authentication");
+            logger.error("Attempted to create workout template without authentication");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -55,70 +55,70 @@ public class WorkoutTemplateController {
                 });
 
         try {
-            WorkoutTemplate createdRoutine = routineService.createRoutine(user, request);
-            logger.info("Successfully created routine with id: {} for user: {}", createdRoutine.getId(), subId);
+            WorkoutTemplate createdWorkoutTemplate = workoutTemplate.createWorkoutTemplate(user, request);
+            logger.info("Successfully created workout template with id: {} for user: {}", createdWorkoutTemplate.getId(), subId);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new WorkoutTemplateResponse(createdRoutine.getId()));
+                    .body(new WorkoutTemplateResponse(createdWorkoutTemplate.getId()));
         } catch (IllegalArgumentException ex) {
-            logger.warn("Failed to create routine: {}", ex.getMessage());
+            logger.warn("Failed to create workout template: {}", ex.getMessage());
             throw ex;
         } catch (Exception ex) {
-            logger.error("Error creating routine: {}", request.getName(), ex);
+            logger.error("Error creating workout template: {}", request.getName(), ex);
             throw ex;
         }
     }
 
-    @GetMapping("/{routineId}")
-    public ResponseEntity<WorkoutTemplate> getRoutineById(@PathVariable Long routineId) {
-        logger.debug("Getting routine by id: {}", routineId);
-        return routineService.getRoutineById(routineId)
-                .map(routine -> {
-                    logger.debug("Found routine with id: {}", routineId);
-                    return ResponseEntity.ok(routine);
+    @GetMapping("/{workoutTemplateId}")
+    public ResponseEntity<WorkoutTemplate> getWorkoutTemplateById(@PathVariable Long workoutTemplateId) {
+        logger.debug("Getting workout template by id: {}", workoutTemplateId);
+        return workoutTemplate.getWorkoutTemplateById(workoutTemplateId)
+                .map(workoutTemplate -> {
+                    logger.debug("Found workout template with id: {}", workoutTemplateId);
+                    return ResponseEntity.ok(workoutTemplate);
                 })
                 .orElseGet(() -> {
-                    logger.warn("Routine not found with id: {}", routineId);
+                    logger.warn("Workout template not found with id: {}", workoutTemplateId);
                     return ResponseEntity.notFound().build();
                 });
     }
 
     @GetMapping
-    public ResponseEntity<List<WorkoutTemplate>> getRoutines(@RequestParam(required = false) String subId) {
+    public ResponseEntity<List<WorkoutTemplate>> getWorkoutTemplate(@RequestParam(required = false) String subId) {
         if (subId != null && !subId.isBlank()) {
             logger.debug("Getting routines for user with sub_id: {}", subId);
-            List<WorkoutTemplate> routines = routineService.getRoutinesByUserSubId(subId);
-            return ResponseEntity.ok(routines);
+            List<WorkoutTemplate> workoutTemplates = workoutTemplate.getWorkoutTemplateByUserSubId(subId);
+            return ResponseEntity.ok(workoutTemplates);
         }
         logger.debug("Getting all routines");
-        List<WorkoutTemplate> routines = routineService.getAllRoutines();
+        List<WorkoutTemplate> routines = workoutTemplate.getAllWorkoutTemplate();
         return ResponseEntity.ok(routines);
     }
 
-    @PutMapping("/{routineId}")
-    public ResponseEntity<WorkoutTemplate> updateRoutine(
-            @PathVariable Long routineId,
-            @Valid @RequestBody WorkoutTemplate routine) {
-        logger.info("Updating routine with id: {}", routineId);
-        routine.setId(routineId);
-        return routineService.updateRoutine(routine)
-                .map(updatedRoutine -> {
-                    logger.info("Successfully updated routine with id: {}", routineId);
-                    return ResponseEntity.ok(updatedRoutine);
+    @PutMapping("/{workoutTemplateId}")
+    public ResponseEntity<WorkoutTemplate> updateWorkoutTemplate(
+            @PathVariable Long workoutTemplateId,
+            @Valid @RequestBody WorkoutTemplate workoutTemplate) {
+        logger.info("Updating workout template with id: {}", workoutTemplateId);
+        workoutTemplate.setId(workoutTemplateId);
+        return this.workoutTemplate.updateWorkoutTemplate(workoutTemplate)
+                .map(updatedWorkoutTemplate -> {
+                    logger.info("Successfully updated workout template with id: {}", workoutTemplateId);
+                    return ResponseEntity.ok(updatedWorkoutTemplate);
                 })
                 .orElseGet(() -> {
-                    logger.warn("Routine not found for update: id: {}", routineId);
+                    logger.warn("Workout template not found for update: id: {}", workoutTemplateId);
                     return ResponseEntity.notFound().build();
                 });
     }
 
-    @DeleteMapping("/{routineId}")
-    public ResponseEntity<Void> deleteRoutine(@PathVariable Long routineId) {
-        logger.info("Deleting routine with id: {}", routineId);
-        if (routineService.deleteRoutine(routineId)) {
-            logger.info("Successfully deleted routine with id: {}", routineId);
+    @DeleteMapping("/{workoutTemplateId}")
+    public ResponseEntity<Void> deleteWorkoutTemplate(@PathVariable Long workoutTemplateId) {
+        logger.info("Deleting workout template with id: {}", workoutTemplateId);
+        if (workoutTemplate.deleteWorkoutTemplate(workoutTemplateId)) {
+            logger.info("Successfully deleted workout template with id: {}", workoutTemplateId);
             return ResponseEntity.noContent().build();
         }
-        logger.warn("Routine not found for deletion: id: {}", routineId);
+        logger.warn("Workout template not found for deletion: id: {}", workoutTemplateId);
         return ResponseEntity.notFound().build();
     }
 }

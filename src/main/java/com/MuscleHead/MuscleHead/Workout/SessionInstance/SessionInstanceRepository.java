@@ -10,12 +10,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface SessionInstanceRepository extends JpaRepository<SessionInstance, Long> {
 
-    @Query("SELECT we FROM WorkoutExercise we WHERE we.user.sub_id = :subId")
+    @Query("SELECT si FROM SessionInstance si WHERE si.user.sub_id = :subId")
     Page<SessionInstance> findByUser_SubId(@Param("subId") String subId, Pageable pageable);
 
-    @Query("SELECT we FROM WorkoutExercise we WHERE we.user.sub_id = :subId")
+    @Query("SELECT si FROM SessionInstance si WHERE si.user.sub_id = :subId")
     java.util.List<SessionInstance> findByUser_SubId(@Param("subId") String subId);
 
-    @Query("SELECT we FROM WorkoutExercise we WHERE we.workoutSession.id = :sessionId")
+    @Query("SELECT si FROM SessionInstance si WHERE si.sessionLog.id = :sessionId")
     java.util.List<SessionInstance> findByWorkoutSessionId(@Param("sessionId") long sessionId);
 }

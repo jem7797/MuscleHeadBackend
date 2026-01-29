@@ -37,8 +37,8 @@ public class SessionInstance {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "workout_session_id", nullable = false)
-    @NotNull(message = "Workout session is required")
-    private SessionLog workoutSession;
+    @NotNull(message = "Session log is required")
+    private SessionLog sessionLog;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "exercise_id", nullable = false)

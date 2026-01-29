@@ -56,6 +56,6 @@ public class SessionLog {
     @PositiveOrZero(message = "Total duration cannot be negative")
     private Double total_duration;
 
-    @OneToMany(mappedBy = "workoutSession", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SessionInstance> workoutExercises;
+    @OneToMany(mappedBy = "sessionLog", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SessionInstance> sessionInstances;
 }

@@ -24,7 +24,7 @@ public class WorkoutTemplateService {
     private static final Logger logger = LoggerFactory.getLogger(WorkoutTemplateService.class);
 
     @Autowired
-    private WorkoutTemplateRepository routineRepository;
+    private WorkoutTemplateRepository workoutTemplateRepository;
 
     @Autowired
     private UserRepository userRepository;
@@ -33,25 +33,25 @@ public class WorkoutTemplateService {
     private MovementRepository exerciseRepository;
 
     @Autowired
-    private ExerciseInstanceRepository routineExerciseRepository;
+    private ExerciseInstanceRepository exerciseInstanceRepository;
 
     @Transactional
-    public WorkoutTemplate createRoutine(User user, WorkoutTemplateRequest request) {
-        logger.debug("Creating new routine: {} for user: {}",
+    public WorkoutTemplate createWorkoutTemplate(User user, WorkoutTemplateRequest request) {
+        logger.debug("Creating new workout template: {} for user: {}",
                 request != null ? request.getName() : "null", user != null ? user.getSub_id() : "null");
 
         if (user == null || user.getSub_id() == null) {
-            logger.error("Attempted to create routine with null user or sub_id");
+            logger.error("Attempted to create workout template with null user or sub_id");
             throw new IllegalArgumentException("User is required");
         }
 
         if (request == null || request.getName() == null || request.getName().isBlank()) {
-            logger.error("Attempted to create routine with null or blank name");
-            throw new IllegalArgumentException("Routine name is required");
+            logger.error("Attempted to create workout template with null or blank name");
+            throw new IllegalArgumentException("Workout template name is required");
         }
 
         if (request.getExercises() == null || request.getExercises().isEmpty()) {
-            logger.error("Attempted to create routine with null or empty exercises list");
+            logger.error("Attempted to create workout template with null or empty exercises list");
             throw new IllegalArgumentException("Exercises list is required and cannot be empty");
         }
 
@@ -62,13 +62,13 @@ public class WorkoutTemplateService {
                     return new IllegalArgumentException("User not found with sub_id: " + user.getSub_id());
                 });
 
-        // Create Routine
-        WorkoutTemplate routine = new WorkoutTemplate();
-        routine.setUser(existingUser);
-        routine.setName(request.getName());
+        // Create WorkoutTemplate
+        WorkoutTemplate workoutTemplate = new WorkoutTemplate();
+        workoutTemplate.setUser(existingUser);
+        workoutTemplate.setName(request.getName());
 
-        // Create RoutineExercise entities
-        java.util.List<ExerciseInstance> routineExercises = new java.util.ArrayList<>();
+        // Create ExerciseInstance entities
+        java.util.List<ExerciseInstance> exerciseInstances = new java.util.ArrayList<>();
         for (ExerciseInstanceRequest exerciseRequest : request.getExercises()) {
             // Find Exercise
             Movement exercise = exerciseRepository.findById(exerciseRequest.getExerciseId())
@@ -77,39 +77,39 @@ public class WorkoutTemplateService {
                         return new IllegalArgumentException("Exercise not found: " + exerciseRequest.getExerciseId());
                     });
 
-            // Create RoutineExercise
-            ExerciseInstance routineExercise = new ExerciseInstance();
-            routineExercise.setRoutine(routine);
-            routineExercise.setExercise(exercise);
-            routineExercise.setOrderIndex(exerciseRequest.getOrderIndex());
-            routineExercise.setReps(exerciseRequest.getReps());
-            routineExercise.setSets(exerciseRequest.getSets());
+            // Create ExerciseInstance
+            ExerciseInstance exerciseInstance = new ExerciseInstance();
+            exerciseInstance.setRoutine(workoutTemplate);
+            exerciseInstance.setExercise(exercise);
+            exerciseInstance.setOrderIndex(exerciseRequest.getOrderIndex());
+            exerciseInstance.setReps(exerciseRequest.getReps());
+            exerciseInstance.setSets(exerciseRequest.getSets());
 
-            routineExercises.add(routineExercise);
+            exerciseInstances.add(exerciseInstance);
         }
 
-        routine.setRoutineExercises(routineExercises);
+        workoutTemplate.setRoutineExercises(exerciseInstances);
 
-        // Save routine (cascade will save exercises)
-        WorkoutTemplate savedRoutine = routineRepository.save(routine);
-        logger.info("Routine created successfully with id: {} for user: {} with {} exercises",
-                savedRoutine.getId(), existingUser.getSub_id(), routineExercises.size());
+        // Save workout template (cascade will save exercises)
+        WorkoutTemplate savedWorkoutTemplate = workoutTemplateRepository.save(workoutTemplate);
+        logger.info("Workout template created successfully with id: {} for user: {} with {} exercises",
+                savedWorkoutTemplate.getId(), existingUser.getSub_id(), exerciseInstances.size());
 
-        return savedRoutine;
+        return savedWorkoutTemplate;
     }
 
     @Transactional
-    public WorkoutTemplate createNewRoutine(WorkoutTemplate routine) {
-        logger.debug("Creating new routine: {}", routine != null ? routine.getName() : "null");
-        if (routine == null || routine.getUser() == null) {
-            logger.error("Attempted to create routine with null routine or user");
-            throw new IllegalArgumentException("Routine and user must exist and not be null");
+    public WorkoutTemplate createNewWorkoutTemplate(WorkoutTemplate workoutTemplate) {
+        logger.debug("Creating new workout template: {}", workoutTemplate != null ? workoutTemplate.getName() : "null");
+        if (workoutTemplate == null || workoutTemplate.getUser() == null) {
+            logger.error("Attempted to create workout template with null workout template or user");
+            throw new IllegalArgumentException("Workout template and user must exist and not be null");
         }
 
         // Ensure user exists
-        User user = routine.getUser();
+        User user = workoutTemplate.getUser();
         if (user.getSub_id() == null) {
-            logger.error("Attempted to create routine with user missing sub_id");
+            logger.error("Attempted to create workout template with user missing sub_id");
             throw new IllegalArgumentException("User sub_id must not be null");
         }
         User existingUser = userRepository.findById(user.getSub_id())
@@ -117,138 +117,138 @@ public class WorkoutTemplateService {
                     logger.error("User not found with sub_id: {}", user.getSub_id());
                     return new IllegalArgumentException("User not found with sub_id: " + user.getSub_id());
                 });
-        routine.setUser(existingUser);
+        workoutTemplate.setUser(existingUser);
 
-        // Set routine reference on all RoutineExercises and ensure exercises exist
-        if (routine.getRoutineExercises() != null) {
-            for (ExerciseInstance routineExercise : routine.getRoutineExercises()) {
-                routineExercise.setRoutine(routine);
-                if (routineExercise.getExercise() != null && routineExercise.getExercise().getId() != null) {
+        // Set workout template reference on all ExerciseInstances and ensure exercises exist
+        if (workoutTemplate.getRoutineExercises() != null) {
+            for (ExerciseInstance exerciseInstance : workoutTemplate.getRoutineExercises()) {
+                exerciseInstance.setRoutine(workoutTemplate);
+                if (exerciseInstance.getExercise() != null && exerciseInstance.getExercise().getId() != null) {
                     // Exercise already exists, fetch it
-                    Movement exercise = exerciseRepository.findById(routineExercise.getExercise().getId())
+                    Movement exercise = exerciseRepository.findById(exerciseInstance.getExercise().getId())
                             .orElseThrow(() -> {
-                                logger.error("Exercise not found with id: {}", routineExercise.getExercise().getId());
+                                logger.error("Exercise not found with id: {}", exerciseInstance.getExercise().getId());
                                 return new IllegalArgumentException(
-                                        "Exercise not found with id: " + routineExercise.getExercise().getId());
+                                        "Exercise not found with id: " + exerciseInstance.getExercise().getId());
                             });
-                    routineExercise.setExercise(exercise);
-                } else if (routineExercise.getExercise() != null && routineExercise.getExercise().getName() != null) {
+                    exerciseInstance.setExercise(exercise);
+                } else if (exerciseInstance.getExercise() != null && exerciseInstance.getExercise().getName() != null) {
                     // Try to find by name, or create new exercise
-                    Movement exercise = exerciseRepository.findByName(routineExercise.getExercise().getName())
+                    Movement exercise = exerciseRepository.findByName(exerciseInstance.getExercise().getName())
                             .orElseGet(() -> {
-                                logger.debug("Creating new exercise: {}", routineExercise.getExercise().getName());
-                                return exerciseRepository.save(routineExercise.getExercise());
+                                logger.debug("Creating new exercise: {}", exerciseInstance.getExercise().getName());
+                                return exerciseRepository.save(exerciseInstance.getExercise());
                             });
-                    routineExercise.setExercise(exercise);
+                    exerciseInstance.setExercise(exercise);
                 }
             }
         }
 
-        WorkoutTemplate savedRoutine = routineRepository.save(routine);
-        logger.info("Routine created successfully with id: {}", savedRoutine.getId());
-        return savedRoutine;
+        WorkoutTemplate savedWorkoutTemplate = workoutTemplateRepository.save(workoutTemplate);
+        logger.info("Workout template created successfully with id: {}", savedWorkoutTemplate.getId());
+        return savedWorkoutTemplate;
     }
 
     @Transactional
-    public Optional<WorkoutTemplate> updateRoutine(WorkoutTemplate updatedRoutine) {
-        logger.debug("Updating routine with id: {}", updatedRoutine != null ? updatedRoutine.getId() : "null");
-        if (updatedRoutine == null || updatedRoutine.getId() == null) {
-            logger.error("Attempted to update routine with null routine or id");
-            throw new IllegalArgumentException("Routine and id must not be null");
+    public Optional<WorkoutTemplate> updateWorkoutTemplate(WorkoutTemplate updatedWorkoutTemplate) {
+        logger.debug("Updating workout template with id: {}", updatedWorkoutTemplate != null ? updatedWorkoutTemplate.getId() : "null");
+        if (updatedWorkoutTemplate == null || updatedWorkoutTemplate.getId() == null) {
+            logger.error("Attempted to update workout template with null workout template or id");
+            throw new IllegalArgumentException("Workout template and id must not be null");
         }
 
-        return routineRepository.findById(updatedRoutine.getId())
-                .map(existingRoutine -> {
-                    logger.debug("Found existing routine, updating fields for id: {}", updatedRoutine.getId());
-                    if (updatedRoutine.getName() != null) {
-                        existingRoutine.setName(updatedRoutine.getName());
+        return workoutTemplateRepository.findById(updatedWorkoutTemplate.getId())
+                .map(existingWorkoutTemplate -> {
+                    logger.debug("Found existing workout template, updating fields for id: {}", updatedWorkoutTemplate.getId());
+                    if (updatedWorkoutTemplate.getName() != null) {
+                        existingWorkoutTemplate.setName(updatedWorkoutTemplate.getName());
                     }
 
-                    // Handle RoutineExercises update
-                    if (updatedRoutine.getRoutineExercises() != null) {
-                        // Remove existing RoutineExercises (orphanRemoval will handle deletion)
-                        existingRoutine.getRoutineExercises().clear();
+                    // Handle ExerciseInstances update
+                    if (updatedWorkoutTemplate.getRoutineExercises() != null) {
+                        // Remove existing ExerciseInstances (orphanRemoval will handle deletion)
+                        existingWorkoutTemplate.getRoutineExercises().clear();
 
-                        // Add new RoutineExercises
-                        for (ExerciseInstance routineExercise : updatedRoutine.getRoutineExercises()) {
-                            routineExercise.setRoutine(existingRoutine);
-                            if (routineExercise.getExercise() != null
-                                    && routineExercise.getExercise().getId() != null) {
+                        // Add new ExerciseInstances
+                        for (ExerciseInstance exerciseInstance : updatedWorkoutTemplate.getRoutineExercises()) {
+                            exerciseInstance.setRoutine(existingWorkoutTemplate);
+                            if (exerciseInstance.getExercise() != null
+                                    && exerciseInstance.getExercise().getId() != null) {
                                 // Exercise already exists, fetch it
-                                Movement exercise = exerciseRepository.findById(routineExercise.getExercise().getId())
+                                Movement exercise = exerciseRepository.findById(exerciseInstance.getExercise().getId())
                                         .orElseThrow(() -> {
                                             logger.error("Exercise not found with id: {}",
-                                                    routineExercise.getExercise().getId());
+                                                    exerciseInstance.getExercise().getId());
                                             return new IllegalArgumentException("Exercise not found with id: "
-                                                    + routineExercise.getExercise().getId());
+                                                    + exerciseInstance.getExercise().getId());
                                         });
-                                routineExercise.setExercise(exercise);
-                            } else if (routineExercise.getExercise() != null
-                                    && routineExercise.getExercise().getName() != null) {
+                                exerciseInstance.setExercise(exercise);
+                            } else if (exerciseInstance.getExercise() != null
+                                    && exerciseInstance.getExercise().getName() != null) {
                                 // Try to find by name, or create new exercise
                                 Movement exercise = exerciseRepository
-                                        .findByName(routineExercise.getExercise().getName())
+                                        .findByName(exerciseInstance.getExercise().getName())
                                         .orElseGet(() -> {
                                             logger.debug("Creating new exercise: {}",
-                                                    routineExercise.getExercise().getName());
-                                            return exerciseRepository.save(routineExercise.getExercise());
+                                                    exerciseInstance.getExercise().getName());
+                                            return exerciseRepository.save(exerciseInstance.getExercise());
                                         });
-                                routineExercise.setExercise(exercise);
+                                exerciseInstance.setExercise(exercise);
                             }
-                            existingRoutine.getRoutineExercises().add(routineExercise);
+                            existingWorkoutTemplate.getRoutineExercises().add(exerciseInstance);
                         }
                     }
 
-                    WorkoutTemplate savedRoutine = routineRepository.save(existingRoutine);
-                    logger.info("Routine updated successfully with id: {}", savedRoutine.getId());
-                    return savedRoutine;
+                    WorkoutTemplate savedWorkoutTemplate = workoutTemplateRepository.save(existingWorkoutTemplate);
+                    logger.info("Workout template updated successfully with id: {}", savedWorkoutTemplate.getId());
+                    return savedWorkoutTemplate;
                 });
     }
 
     @Transactional
-    public boolean deleteRoutine(Long routineId) {
-        logger.debug("Deleting routine with id: {}", routineId);
-        if (routineId == null) {
-            logger.warn("Attempted to delete routine with null id");
+    public boolean deleteWorkoutTemplate(Long workoutTemplateId) {
+        logger.debug("Deleting workout template with id: {}", workoutTemplateId);
+        if (workoutTemplateId == null) {
+            logger.warn("Attempted to delete workout template with null id");
             return false;
         }
-        if (!routineRepository.existsById(routineId)) {
-            logger.warn("Routine not found for deletion: id: {}", routineId);
+        if (!workoutTemplateRepository.existsById(workoutTemplateId)) {
+            logger.warn("Workout template not found for deletion: id: {}", workoutTemplateId);
             return false;
         }
-        routineRepository.deleteById(routineId);
-        logger.info("Routine deleted successfully with id: {}", routineId);
+        workoutTemplateRepository.deleteById(workoutTemplateId);
+        logger.info("Workout template deleted successfully with id: {}", workoutTemplateId);
         return true;
     }
 
-    public Optional<WorkoutTemplate> getRoutineById(Long routineId) {
-        logger.debug("Getting routine by id: {}", routineId);
-        if (routineId == null) {
-            logger.error("Attempted to get routine with null id");
-            throw new IllegalArgumentException("Routine id must not be null");
+    public Optional<WorkoutTemplate> getWorkoutTemplateById(Long workoutTemplateId) {
+        logger.debug("Getting workout template by id: {}", workoutTemplateId);
+        if (workoutTemplateId == null) {
+            logger.error("Attempted to get workout template with null id");
+            throw new IllegalArgumentException("Workout template id must not be null");
         }
-        Optional<WorkoutTemplate> routine = routineRepository.findById(routineId);
-        if (routine.isPresent()) {
-            logger.debug("Found routine with id: {}", routineId);
+        Optional<WorkoutTemplate> workoutTemplate = workoutTemplateRepository.findById(workoutTemplateId);
+        if (workoutTemplate.isPresent()) {
+            logger.debug("Found workout template with id: {}", workoutTemplateId);
         } else {
-            logger.debug("Routine not found with id: {}", routineId);
+            logger.debug("Workout template not found with id: {}", workoutTemplateId);
         }
-        return routine;
+        return workoutTemplate;
     }
 
-    public List<WorkoutTemplate> getRoutinesByUserSubId(String subId) {
-        logger.debug("Getting routines for user with sub_id: {}", subId);
+    public List<WorkoutTemplate> getWorkoutTemplateByUserSubId(String subId) {
+        logger.debug("Getting workout templates for user with sub_id: {}", subId);
         if (subId == null || subId.isBlank()) {
-            logger.error("Attempted to get routines with null or blank sub_id");
+            logger.error("Attempted to get workout templates with null or blank sub_id");
             throw new IllegalArgumentException("User sub_id must not be blank");
         }
-        List<WorkoutTemplate> routines = routineRepository.findByUserSub_id(subId);
-        logger.debug("Found {} routines for user with sub_id: {}", routines.size(), subId);
-        return routines;
+        List<WorkoutTemplate> workoutTemplates = workoutTemplateRepository.findByUserSub_id(subId);
+        logger.debug("Found {} workout templates for user with sub_id: {}", workoutTemplates.size(), subId);
+        return workoutTemplates;
     }
 
-    public List<WorkoutTemplate> getAllRoutines() {
-        logger.debug("Getting all routines");
-        return routineRepository.findAll();
+    public List<WorkoutTemplate> getAllWorkoutTemplate() {
+        logger.debug("Getting all workout templates");
+        return workoutTemplateRepository.findAll();
     }
 }
