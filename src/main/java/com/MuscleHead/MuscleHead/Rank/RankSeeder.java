@@ -25,26 +25,26 @@ public class RankSeeder implements CommandLineRunner {
         }
 
         List<Rank> ranks = List.of(
-                createRank(1, "Newbie"),
-                createRank(2, "Motivated"),
-                createRank(3, "Active"),
-                createRank(4, "Consistent"),
-                createRank(5, "Dedicated"),
-                createRank(6, "Trained"),
-                createRank(7, "Athletic"),
-                createRank(8, "Plate Pusher"),
-                createRank(9, "Metal Head"),
-                createRank(10, "Steel Stacker"),
-                createRank(11, "Chalked"),
-                createRank(12, "Powerhouse"),
-                createRank(13, "Advanced"),
-                createRank(14, "Elite"),
-                createRank(15, "Juggernaut"),
-                createRank(16, "Titan"),
-                createRank(17, "Ironborn"),
-                createRank(18, "Gym Rat"),
-                createRank(19, "Olympian"),
-                createRank(20, "Herculean")
+                createRank(0, "Newbie"),
+                createRank(1, "Motivated"),
+                createRank(2, "Active"),
+                createRank(3, "Consistent"),
+                createRank(4, "Dedicated"),
+                createRank(5, "Trained"),
+                createRank(6, "Athletic"),
+                createRank(7, "Plate Pusher"),
+                createRank(8, "Metal Head"),
+                createRank(9, "Steel Stacker"),
+                createRank(10, "Chalked"),
+                createRank(11, "Powerhouse"),
+                createRank(12, "Advanced"),
+                createRank(13, "Elite"),
+                createRank(14, "Juggernaut"),
+                createRank(15, "Titan"),
+                createRank(16, "Ironborn"),
+                createRank(17, "Gym Rat"),
+                createRank(18, "Olympian"),
+                createRank(19, "Herculean")
         );
 
         rankRepository.saveAll(ranks);

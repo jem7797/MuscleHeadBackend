@@ -18,6 +18,7 @@ import com.MuscleHead.MuscleHead.Routine.WorkoutTemplate.WorkoutTemplate;
 import com.MuscleHead.MuscleHead.Routine.WorkoutTemplate.WorkoutTemplateRepository;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
+import com.MuscleHead.MuscleHead.User.UserService;
 import com.MuscleHead.MuscleHead.Workout.SessionInstance.SessionInstance;
 import com.MuscleHead.MuscleHead.Workout.SessionInstance.SessionInstanceRepository;
 import com.MuscleHead.MuscleHead.Workout.SessionInstance.SessionInstanceRequest;
@@ -37,6 +38,9 @@ public class SessionLogService {
 
     @Autowired
     UserRepository userRepository;
+
+    @Autowired
+    UserService userService;
 
     @Autowired
     MovementRepository exerciseRepository;
@@ -120,9 +124,14 @@ public class SessionLogService {
 
         // Save session log (cascade will save exercises)
         SessionLog savedSessionLog = sessionLogRepository.save(sessionLog);
+
+        user.setXP(user.getXP() + 1);
+        userRepository.save(user);
+        userService.levelUp(user);
+
         logger.info("Session log created successfully with id: {} for user: {} with {} exercises",
                 savedSessionLog.getId(), savedSessionLog.getUser().getSub_id(), sessionInstances.size());
-        
+
         return savedSessionLog;
     }
 
@@ -135,6 +144,12 @@ public class SessionLogService {
             throw new IllegalArgumentException("Error creating new session log");
         }
         SessionLog savedSessionLog = sessionLogRepository.save(sessionLog);
+
+        User user = savedSessionLog.getUser();
+        user.setXP(user.getXP() + 1);
+        userRepository.save(user);
+        userService.levelUp(user);
+
         logger.info("Session log created successfully with id: {} for user: {}",
                 savedSessionLog.getId(), savedSessionLog.getUser().getSub_id());
         return savedSessionLog;
@@ -242,3 +257,5 @@ public class SessionLogService {
         return sessionLogs;
     }
 }
+
+

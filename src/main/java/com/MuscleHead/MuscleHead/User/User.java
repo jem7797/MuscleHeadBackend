@@ -83,10 +83,7 @@ public class User {
     private String profilePicUrl;
 
     @PositiveOrZero(message = "XP cannot be negative")
-    private double XP = 0;
-
-    @PositiveOrZero(message = "XP cannot be negative")
-    private int level = 1;
+    private int XP = 0;
 
     private boolean nattyStatus = true; // Default to natty/yes
 

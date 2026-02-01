@@ -1,5 +1,7 @@
 package com.MuscleHead.MuscleHead.User;
 
+import com.MuscleHead.MuscleHead.Rank.RankRepository;
+
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -16,6 +18,9 @@ public class UserService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RankRepository rankRepository;
 
     @Transactional
     public User createNewUser(User user) {
@@ -128,5 +133,28 @@ public class UserService {
             logger.debug("User not found with sub_id: {}", subId);
         }
         return user;
+    }
+
+    /**
+     * If the user's XP is divisible by 5, sets the user's rank to the corresponding
+     * rank (level = XP/5, capped at 19) and saves the user.
+     */
+    @Transactional
+    public void levelUp(User user) {
+        if (user == null || user.getSub_id() == null) {
+            return;
+        }
+        int xp = user.getXP();
+        if (xp < 0 || xp % 5 != 0) {
+            return;
+        }
+        int rankLevel = Math.min(xp / 5, 19);
+        rankRepository.findByLevel(rankLevel)
+                .ifPresent(rank -> {
+                    user.setRank(rank);
+                    userRepository.save(user);
+                    logger.info("User {} leveled up to rank level {} ({})", user.getSub_id(), rankLevel,
+                            rank.getName());
+                });
     }
 }

@@ -7,7 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -22,7 +22,7 @@ public class Rank {
     private Long id;
 
     @NotNull(message = "Level is required")
-    @Positive(message = "Level must be a positive number")
+    @PositiveOrZero(message = "Level must be 0 or greater")
     private Integer level;
 
     @NotBlank(message = "Rank name cannot be blank")
