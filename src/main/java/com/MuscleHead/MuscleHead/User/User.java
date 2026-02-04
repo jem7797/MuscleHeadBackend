@@ -54,11 +54,12 @@ public class User {
     @JoinColumn(name = "rank_id")
     private Rank rank;
 
-    
-    @Positive(message = "Height must be a positive number")
+    /** Optional. Use null or 0 when not set. */
+    @PositiveOrZero(message = "Height must be 0 or greater")
     private Integer height;
 
-    @Positive(message = "Weight must be a positive number")
+    /** Optional. Use null or 0 when not set. */
+    @PositiveOrZero(message = "Weight must be 0 or greater")
     private Integer weight;
     private boolean show_weight = true;
     private boolean show_height = true;
@@ -87,6 +88,8 @@ public class User {
 
     private boolean nattyStatus = true; // Default to natty/yes
 
+    private int number_of_posts = 0;
+
     @Column(updatable = false)
     @Min(value = 1920, message = "Birth year must be 1920 or later")
     @ValidBirthYear
@@ -100,7 +103,6 @@ public class User {
     @JsonIgnore
     private List<SessionLog> workoutSessions;
 
-    @Max(value = 3)
     @OneToMany
     private List<User> nemesis;
 

@@ -56,8 +56,12 @@ public class UserService {
                         existingUser.setFirst_name(updatedUser.getFirst_name());
                     }
                     existingUser.setUsername(updatedUser.getUsername());
-                    existingUser.setHeight(updatedUser.getHeight());
-                    existingUser.setWeight(updatedUser.getWeight());
+                    if (updatedUser.getHeight() != null) {
+                        existingUser.setHeight(updatedUser.getHeight());
+                    }
+                    if (updatedUser.getWeight() != null) {
+                        existingUser.setWeight(updatedUser.getWeight());
+                    }
                     existingUser.setShow_weight(updatedUser.isShow_weight());
                     existingUser.setShow_height(updatedUser.isShow_height());
                     existingUser.setStat_tracking(updatedUser.isStat_tracking());
