@@ -17,6 +17,8 @@ public class SessionLogRequest {
 
     private Long routineId;
 
+    private Integer timeSpentInGym;
+
     @NotNull(message = "Exercises list is required")
     @NotEmpty(message = "Exercises list cannot be empty")
     @Valid

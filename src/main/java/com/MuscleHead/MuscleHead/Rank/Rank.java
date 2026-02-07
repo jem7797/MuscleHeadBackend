@@ -12,7 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "rank")
+@Table(name = "user_rank")
 @Data
 @NoArgsConstructor
 public class Rank {

@@ -19,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -58,4 +59,8 @@ public class SessionLog {
 
     @OneToMany(mappedBy = "sessionLog", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SessionInstance> sessionInstances;
+
+    //stored in seconds
+    @PositiveOrZero(message = "Time spent in gym cannot be negative")
+    private int timeSpentInGym;
 }

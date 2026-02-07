@@ -20,11 +20,9 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -50,8 +48,8 @@ public class User {
     @NotBlank(message = "First name cannot be empty")
     private String first_name;
 
-    @ManyToOne(fetch = jakarta.persistence.FetchType.LAZY)
-    @JoinColumn(name = "rank_id")
+    @ManyToOne(fetch = jakarta.persistence.FetchType.EAGER)
+    @JoinColumn(name = "user_rank_id")
     private Rank rank;
 
     /** Optional. Use null or 0 when not set. */
@@ -103,6 +101,7 @@ public class User {
     @JsonIgnore
     private List<SessionLog> workoutSessions;
 
+    @JsonIgnore
     @OneToMany
     private List<User> nemesis;
 

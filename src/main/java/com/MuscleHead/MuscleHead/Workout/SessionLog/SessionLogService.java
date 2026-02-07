@@ -67,6 +67,9 @@ public class SessionLogService {
         sessionLog.setUser(user);
         sessionLog.setDate(Instant.now());
         sessionLog.setNotes(request.getNotes());
+        if (request.getTimeSpentInGym() != null) {
+            sessionLog.setTimeSpentInGym(request.getTimeSpentInGym());
+        }
         
         // Set routine if provided
         if (request.getRoutineId() != null) {
@@ -196,6 +199,7 @@ public class SessionLogService {
                     existingSessionLog.setTotal_weight_lifted(updatedSessionLog.getTotal_weight_lifted());
                     existingSessionLog.setSession_highest_lift(updatedSessionLog.getSession_highest_lift());
                     existingSessionLog.setTotal_duration(updatedSessionLog.getTotal_duration());
+                    existingSessionLog.setTimeSpentInGym(updatedSessionLog.getTimeSpentInGym());
                     existingSessionLog.setUser(updatedSessionLog.getUser());
 
                     SessionLog savedSessionLog = sessionLogRepository.save(existingSessionLog);
@@ -220,6 +224,7 @@ public class SessionLogService {
                     existingSessionLog.setTotal_weight_lifted(updatedSessionLog.getTotal_weight_lifted());
                     existingSessionLog.setSession_highest_lift(updatedSessionLog.getSession_highest_lift());
                     existingSessionLog.setTotal_duration(updatedSessionLog.getTotal_duration());
+                    existingSessionLog.setTimeSpentInGym(updatedSessionLog.getTimeSpentInGym());
                     existingSessionLog.setUser(updatedSessionLog.getUser());
 
                     SessionLog savedSessionLog = sessionLogRepository.save(existingSessionLog);

@@ -33,6 +33,14 @@ public class UserService {
             logger.warn("Attempted to create user that already exists: {}", user.getSub_id());
             throw new IllegalStateException("User already exists: " + user.getSub_id());
         }
+        // Assign default rank (Newbie, level 0) if not provided
+        if (user.getRank() == null) {
+            rankRepository.findByLevel(0)
+                    .ifPresentOrElse(
+                            user::setRank,
+                            () -> logger.warn("Cannot assign default rank to new user: rank with level 0 (Newbie) not found. Ensure RankSeeder has run.")
+                    );
+        }
         User savedUser = userRepository.save(user);
         logger.info("User created successfully with sub_id: {}", savedUser.getSub_id());
         return savedUser;
@@ -49,6 +57,7 @@ public class UserService {
         return userRepository.findById(updatedUser.getSub_id())
                 .map(existingUser -> {
                     logger.debug("Found existing user, updating fields for sub_id: {}", updatedUser.getSub_id());
+                    ensureUserHasRank(existingUser);
                     if (updatedUser.getEmail() != null) {
                         existingUser.setEmail(updatedUser.getEmail());
                     }
@@ -109,32 +118,43 @@ public class UserService {
         return true;
     }
 
+    @Transactional
     public Optional<User> getUserByUsername(String username) {
         logger.debug("Getting user by username: {}", username);
         if (username == null || username.isBlank()) {
             logger.error("Attempted to get user with null or blank username");
             throw new IllegalArgumentException("Username must not be blank");
         }
-        Optional<User> user = userRepository.findByUsername(username);
-        if (user.isPresent()) {
-            logger.debug("Found user with username: {}", username);
-        } else {
-            logger.debug("User not found with username: {}", username);
-        }
-        return user;
+        return userRepository.findByUsername(username)
+                .map(this::ensureUserHasRank);
     }
 
+    @Transactional
     public Optional<User> getUserById(String subId) {
         logger.debug("Getting user by sub_id: {}", subId);
         if (subId == null || subId.isBlank()) {
             logger.error("Attempted to get user with null or blank sub_id");
             throw new IllegalArgumentException("User id must not be blank");
         }
-        Optional<User> user = userRepository.findById(subId);
-        if (user.isPresent()) {
-            logger.debug("Found user with sub_id: {}", subId);
-        } else {
-            logger.debug("User not found with sub_id: {}", subId);
+        return userRepository.findById(subId)
+                .map(this::ensureUserHasRank);
+    }
+
+    /**
+     * Assigns default rank (Newbie, level 0) if user has none. Fixes existing users
+     * who had null rank. Returns the user (updated if rank was assigned).
+     */
+    private User ensureUserHasRank(User user) {
+        if (user.getRank() == null) {
+            rankRepository.findByLevel(0)
+                    .ifPresentOrElse(
+                            rank -> {
+                                user.setRank(rank);
+                                userRepository.save(user);
+                                logger.debug("Assigned default rank to user: {}", user.getSub_id());
+                            },
+                            () -> logger.warn("Cannot assign default rank: rank with level 0 (Newbie) not found. Ensure RankSeeder has run.")
+                    );
         }
         return user;
     }
@@ -146,6 +166,16 @@ public class UserService {
     @Transactional
     public void levelUp(User user) {
         if (user == null || user.getSub_id() == null) {
+            return;
+        }
+        // Ensure user has a rank (e.g. existing users with 0-4 XP who never got one)
+        if (user.getRank() == null) {
+            rankRepository.findByLevel(0)
+                    .ifPresent(rank -> {
+                        user.setRank(rank);
+                        userRepository.save(user);
+                        logger.info("User {} assigned default rank (Newbie)", user.getSub_id());
+                    });
             return;
         }
         int xp = user.getXP();
