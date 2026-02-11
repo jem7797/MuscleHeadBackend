@@ -119,7 +119,8 @@ public class WorkoutTemplateService {
                 });
         workoutTemplate.setUser(existingUser);
 
-        // Set workout template reference on all ExerciseInstances and ensure exercises exist
+        // Set workout template reference on all ExerciseInstances and ensure exercises
+        // exist
         if (workoutTemplate.getRoutineExercises() != null) {
             for (ExerciseInstance exerciseInstance : workoutTemplate.getRoutineExercises()) {
                 exerciseInstance.setRoutine(workoutTemplate);
@@ -151,7 +152,8 @@ public class WorkoutTemplateService {
 
     @Transactional
     public Optional<WorkoutTemplate> updateWorkoutTemplate(WorkoutTemplate updatedWorkoutTemplate) {
-        logger.debug("Updating workout template with id: {}", updatedWorkoutTemplate != null ? updatedWorkoutTemplate.getId() : "null");
+        logger.debug("Updating workout template with id: {}",
+                updatedWorkoutTemplate != null ? updatedWorkoutTemplate.getId() : "null");
         if (updatedWorkoutTemplate == null || updatedWorkoutTemplate.getId() == null) {
             logger.error("Attempted to update workout template with null workout template or id");
             throw new IllegalArgumentException("Workout template and id must not be null");
@@ -159,7 +161,8 @@ public class WorkoutTemplateService {
 
         return workoutTemplateRepository.findById(updatedWorkoutTemplate.getId())
                 .map(existingWorkoutTemplate -> {
-                    logger.debug("Found existing workout template, updating fields for id: {}", updatedWorkoutTemplate.getId());
+                    logger.debug("Found existing workout template, updating fields for id: {}",
+                            updatedWorkoutTemplate.getId());
                     if (updatedWorkoutTemplate.getName() != null) {
                         existingWorkoutTemplate.setName(updatedWorkoutTemplate.getName());
                     }

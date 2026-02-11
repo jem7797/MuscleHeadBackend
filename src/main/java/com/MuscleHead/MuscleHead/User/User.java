@@ -2,7 +2,9 @@ package com.MuscleHead.MuscleHead.User;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.MuscleHead.MuscleHead.Rank.Rank;
 import com.MuscleHead.MuscleHead.Workout.SessionLog.SessionLog;
@@ -12,10 +14,13 @@ import com.MuscleHead.MuscleHead.validation.ValidBirthYear;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
@@ -105,13 +110,19 @@ public class User {
     @OneToMany
     private List<User> nemesis;
 
+@ElementCollection
+@CollectionTable(name = "user_workout_schedule", joinColumns = @JoinColumn(name = "user_sub_id"))
+@MapKeyColumn(name = "day_of_week")
+@Column(name = "workout_label")
+private Map<String, String> workoutSchedule = new HashMap<>();
+
+
     @PrePersist
     protected void onCreate() {
         if (date_created == null || date_created.isBlank()) {
             date_created = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         }
-        // Ensure nattyStatus defaults to true if not explicitly set
-        // (Already handled by field initialization, but keeping for clarity)
+    
     }
 
 }

@@ -28,13 +28,13 @@ public class ExerciseInstance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "routine_id", nullable = false)
     @JsonIgnore
     @NotNull(message = "Routine is required")
     private WorkoutTemplate routine;
  
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "exercise_id", nullable = false)
     @NotNull(message = "Exercise is required")
     private Movement exercise;

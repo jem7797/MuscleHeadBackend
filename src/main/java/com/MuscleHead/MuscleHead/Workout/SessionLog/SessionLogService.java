@@ -129,6 +129,12 @@ public class SessionLogService {
         SessionLog savedSessionLog = sessionLogRepository.save(sessionLog);
 
         user.setXP(user.getXP() + 1);
+        user.setLifetime_weight_lifted(user.getLifetime_weight_lifted() + totalWeightLifted);
+        if (sessionHighestLift > user.getHighest_weight_lifted()) {
+            user.setHighest_weight_lifted(sessionHighestLift);
+        }
+        int gymTime = request.getTimeSpentInGym() != null ? request.getTimeSpentInGym() : 0;
+        user.setLifetime_gym_time(user.getLifetime_gym_time() + gymTime);
         userRepository.save(user);
         userService.levelUp(user);
 
@@ -150,6 +156,13 @@ public class SessionLogService {
 
         User user = savedSessionLog.getUser();
         user.setXP(user.getXP() + 1);
+        double sessionWeight = savedSessionLog.getTotal_weight_lifted() != null ? savedSessionLog.getTotal_weight_lifted() : 0;
+        double sessionHighest = savedSessionLog.getSession_highest_lift() != null ? savedSessionLog.getSession_highest_lift() : 0;
+        user.setLifetime_weight_lifted(user.getLifetime_weight_lifted() + sessionWeight);
+        if (sessionHighest > user.getHighest_weight_lifted()) {
+            user.setHighest_weight_lifted(sessionHighest);
+        }
+        user.setLifetime_gym_time(user.getLifetime_gym_time() + savedSessionLog.getTimeSpentInGym());
         userRepository.save(user);
         userService.levelUp(user);
 

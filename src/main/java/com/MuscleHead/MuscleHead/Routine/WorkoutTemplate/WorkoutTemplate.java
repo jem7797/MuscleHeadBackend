@@ -33,7 +33,7 @@ public class WorkoutTemplate {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "user_sub_id", referencedColumnName = "sub_id", nullable = false)
     @JsonIgnore
     private User user;
@@ -41,7 +41,7 @@ public class WorkoutTemplate {
     @NotBlank(message = "Routine name cannot be blank")
     private String name;
 
-    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ExerciseInstance> routineExercises;
 
     private LocalDateTime createdAt;

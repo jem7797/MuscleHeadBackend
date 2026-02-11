@@ -1,5 +1,8 @@
 package com.MuscleHead.MuscleHead.User;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @PostMapping
     public ResponseEntity<User> createUser(
@@ -98,7 +104,7 @@ public class UserController {
             
             return userService.getUserById(subId)
                     .map(user -> {
-                        logger.debug("Found user with sub_id: {}", subId);
+                        logUserSentToFrontend(user, "subId", subId);
                         return ResponseEntity.ok(user);
                     })
                     .orElseGet(() -> {
@@ -112,7 +118,7 @@ public class UserController {
             
             return userService.getUserByUsername(username)
                     .map(user -> {
-                        logger.debug("Found user with username: {}", username);
+                        logUserSentToFrontend(user, "username", username);
                         return ResponseEntity.ok(user);
                     })
                     .orElseGet(() -> {
@@ -122,5 +128,15 @@ public class UserController {
         }
         logger.warn("Get user request missing both username and subId parameters");
         return ResponseEntity.badRequest().build();
+    }
+
+    /** Logs the full user object as sent to the frontend (same JSON shape). */
+    private void logUserSentToFrontend(User user, String lookupType, String lookupValue) {
+        try {
+            String json = objectMapper.writeValueAsString(user);
+            logger.info("[User sent to frontend] lookup by {}={} | user: {}", lookupType, lookupValue, json);
+        } catch (JsonProcessingException e) {
+            logger.warn("Could not serialize user for logging: {}", e.getMessage());
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.MuscleHead.MuscleHead.User;
 
 import com.MuscleHead.MuscleHead.Rank.RankRepository;
 
+import java.util.HashMap;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -83,6 +84,9 @@ public class UserService {
                     existingUser.setNumber_following(updatedUser.getNumber_following());
                     existingUser.setProfilePicUrl(updatedUser.getProfilePicUrl());
                     existingUser.setXP(updatedUser.getXP());
+                    if (updatedUser.getWorkoutSchedule() != null) {
+                        existingUser.setWorkoutSchedule(new HashMap<>(updatedUser.getWorkoutSchedule()));
+                    }
 
                     User savedUser = userRepository.save(existingUser);
                     logger.info("User updated successfully with sub_id: {}", savedUser.getSub_id());
