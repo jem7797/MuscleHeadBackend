@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -23,6 +24,7 @@ import org.springframework.validation.annotation.Validated;
 import com.MuscleHead.MuscleHead.validation.OnCreate;
 import com.MuscleHead.MuscleHead.validation.OnUpdate;
 
+import jakarta.validation.Valid;
 import jakarta.validation.groups.Default;
 
 @RestController
@@ -55,6 +57,23 @@ public class UserController {
             logger.error("Error creating user with sub_id: {}", user.getSub_id(), ex);
             throw ex;
         }
+    }
+
+    @PatchMapping("/{subId}")
+    public ResponseEntity<User> partialUpdateUser(
+            @PathVariable String subId,
+            @Valid @RequestBody UpdateUserRequest request) {
+        logger.info("Partial update for user with sub_id: {}", subId);
+
+        return userService.partialUpdate(subId, request)
+                .map(updatedUser -> {
+                    logger.info("Successfully partially updated user with sub_id: {}", subId);
+                    return ResponseEntity.ok(updatedUser);
+                })
+                .orElseGet(() -> {
+                    logger.warn("User not found for partial update: sub_id: {}", subId);
+                    return ResponseEntity.notFound().build();
+                });
     }
 
     @PutMapping("/{subId}")

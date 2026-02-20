@@ -47,6 +47,84 @@ public class UserService {
         return savedUser;
     }
 
+    /**
+     * Partial update: merges only non-null fields from the request into the existing user.
+     * Use for PATCH requests where the frontend sends only changed fields.
+     */
+    @Transactional
+    public Optional<User> partialUpdate(String subId, UpdateUserRequest request) {
+        if (subId == null || subId.isBlank()) {
+            throw new IllegalArgumentException("sub_id must not be blank");
+        }
+        if (request == null) {
+            throw new IllegalArgumentException("Update request must not be null");
+        }
+
+        return userRepository.findById(subId)
+                .map(existingUser -> {
+                    ensureUserHasRank(existingUser);
+
+                    if (request.getUsername() != null) {
+                        if (request.getUsername().isBlank()) {
+                            throw new IllegalArgumentException("Username cannot be empty");
+                        }
+                        existingUser.setUsername(request.getUsername());
+                    }
+                    if (request.getEmail() != null) {
+                        if (request.getEmail().isBlank()) {
+                            throw new IllegalArgumentException("Email cannot be empty");
+                        }
+                        existingUser.setEmail(request.getEmail());
+                    }
+                    if (request.getFirst_name() != null) {
+                        if (request.getFirst_name().isBlank()) {
+                            throw new IllegalArgumentException("First name cannot be empty");
+                        }
+                        existingUser.setFirst_name(request.getFirst_name());
+                    }
+                    if (request.getHeight() != null) {
+                        if (request.getHeight() < 0) {
+                            throw new IllegalArgumentException("Height must be 0 or greater");
+                        }
+                        existingUser.setHeight(request.getHeight());
+                    }
+                    if (request.getWeight() != null) {
+                        if (request.getWeight() < 0) {
+                            throw new IllegalArgumentException("Weight must be 0 or greater");
+                        }
+                        existingUser.setWeight(request.getWeight());
+                    }
+                    if (request.getShow_weight() != null) {
+                        existingUser.setShow_weight(request.getShow_weight());
+                    }
+                    if (request.getShow_height() != null) {
+                        existingUser.setShow_height(request.getShow_height());
+                    }
+                    if (request.getStat_tracking() != null) {
+                        existingUser.setStat_tracking(request.getStat_tracking());
+                    }
+                    if (request.getPrivacy_setting() != null) {
+                        existingUser.setPrivacy_setting(request.getPrivacy_setting());
+                    }
+                    if (request.getProfilePicUrl() != null) {
+                        existingUser.setProfilePicUrl(request.getProfilePicUrl());
+                    }
+                    if (request.getNattyStatus() != null) {
+                        existingUser.setNattyStatus(request.getNattyStatus());
+                    }
+                    if (request.getBio() != null) {
+                        existingUser.setBio(request.getBio());
+                    }
+                    if (request.getWorkoutSchedule() != null) {
+                        existingUser.setWorkoutSchedule(new HashMap<>(request.getWorkoutSchedule()));
+                    }
+
+                    User savedUser = userRepository.save(existingUser);
+                    logger.info("User partially updated successfully with sub_id: {}", savedUser.getSub_id());
+                    return savedUser;
+                });
+    }
+
     @Transactional
     public Optional<User> updateUser(User updatedUser) {
         logger.debug("Updating user with sub_id: {}", updatedUser != null ? updatedUser.getSub_id() : "null");
@@ -83,6 +161,7 @@ public class UserService {
                     existingUser.setNumber_of_followers(updatedUser.getNumber_of_followers());
                     existingUser.setNumber_following(updatedUser.getNumber_following());
                     existingUser.setProfilePicUrl(updatedUser.getProfilePicUrl());
+                    existingUser.setBio(updatedUser.getBio());
                     existingUser.setXP(updatedUser.getXP());
                     if (updatedUser.getWorkoutSchedule() != null) {
                         existingUser.setWorkoutSchedule(new HashMap<>(updatedUser.getWorkoutSchedule()));

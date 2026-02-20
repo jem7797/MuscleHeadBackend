@@ -106,6 +106,9 @@ public class User {
     @JsonIgnore
     private List<SessionLog> workoutSessions;
 
+    /** Optional. Null when not set. */
+    private String bio;
+
     @JsonIgnore
     @OneToMany
     private List<User> nemesis;
