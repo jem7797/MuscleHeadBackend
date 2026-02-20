@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import com.MuscleHead.MuscleHead.Movement.Movement;
 import com.MuscleHead.MuscleHead.Movement.MovementRepository;
 import com.MuscleHead.MuscleHead.Routine.ExerciseInstance.ExerciseInstance;
-import com.MuscleHead.MuscleHead.Routine.ExerciseInstance.ExerciseInstanceRepository;
 import com.MuscleHead.MuscleHead.Routine.ExerciseInstance.ExerciseInstanceRequest;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
@@ -32,9 +31,7 @@ public class WorkoutTemplateService {
     @Autowired
     private MovementRepository exerciseRepository;
 
-    @Autowired
-    private ExerciseInstanceRepository exerciseInstanceRepository;
-
+    
     @Transactional
     public WorkoutTemplate createWorkoutTemplate(User user, WorkoutTemplateRequest request) {
         logger.debug("Creating new workout template: {} for user: {}",
