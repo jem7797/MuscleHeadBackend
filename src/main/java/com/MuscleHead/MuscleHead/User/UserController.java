@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -147,6 +150,18 @@ public class UserController {
         }
         logger.warn("Get user request missing both username and subId parameters");
         return ResponseEntity.badRequest().build();
+    }
+
+    @GetMapping("search")
+    public ResponseEntity<Page<User>> searchUsers(
+            @RequestParam String q,
+            @PageableDefault(size = 10) Pageable pageable) {
+        try {
+            Page<User> results = userService.searchUsers(q, pageable);
+            return ResponseEntity.ok(results);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     /** Logs the full user object as sent to the frontend (same JSON shape). */

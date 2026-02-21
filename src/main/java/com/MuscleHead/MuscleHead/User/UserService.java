@@ -5,6 +5,9 @@ import com.MuscleHead.MuscleHead.Rank.RankRepository;
 import java.util.HashMap;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -210,6 +213,20 @@ public class UserService {
         }
         return userRepository.findByUsername(username)
                 .map(this::ensureUserHasRank);
+    }
+
+    /**
+     * Search users by username (partial, case-insensitive).
+     * Requires at least 2 characters. Returns paginated results.
+     */
+    @Transactional
+    public Page<User> searchUsers(String query, Pageable pageable) {
+        if (query == null || query.trim().length() < 2) {
+            throw new IllegalArgumentException("Search query must be at least 2 characters");
+        }
+        Page<User> page = userRepository.findByUsernameContainingIgnoreCase(query.trim(), pageable);
+        page.getContent().forEach(this::ensureUserHasRank);
+        return page;
     }
 
     @Transactional
