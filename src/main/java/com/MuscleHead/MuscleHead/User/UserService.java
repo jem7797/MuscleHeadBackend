@@ -2,7 +2,9 @@ package com.MuscleHead.MuscleHead.User;
 
 import com.MuscleHead.MuscleHead.Rank.RankRepository;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -120,6 +122,15 @@ public class UserService {
                     }
                     if (request.getWorkoutSchedule() != null) {
                         existingUser.setWorkoutSchedule(new HashMap<>(request.getWorkoutSchedule()));
+                    }
+                    if (request.getNemesisSubIds() != null) {
+                        List<User> nemesisUsers = new ArrayList<>();
+                        for (String nemesisSubId : request.getNemesisSubIds()) {
+                            if (nemesisSubId != null && !nemesisSubId.equals(subId)) {
+                                userRepository.findById(nemesisSubId).ifPresent(nemesisUsers::add);
+                            }
+                        }
+                        existingUser.setNemesis(nemesisUsers);
                     }
 
                     User savedUser = userRepository.save(existingUser);

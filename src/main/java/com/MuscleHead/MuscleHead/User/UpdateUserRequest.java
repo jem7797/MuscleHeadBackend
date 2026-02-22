@@ -1,5 +1,6 @@
 package com.MuscleHead.MuscleHead.User;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.constraints.Email;
@@ -27,4 +28,5 @@ public class UpdateUserRequest {
     private Boolean nattyStatus;
     private String bio;
     private Map<String, String> workoutSchedule;
+    private List<String> nemesisSubIds;
 }
