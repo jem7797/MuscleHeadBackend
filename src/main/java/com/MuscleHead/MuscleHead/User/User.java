@@ -81,6 +81,8 @@ public class User {
     @Min(value = 0, message = "Number of followers cannot be negative")
     private int number_of_followers = 0;
 
+    
+
     @Min(value = 0, message = "Number following cannot be negative")
     private int number_following = 0;
 
