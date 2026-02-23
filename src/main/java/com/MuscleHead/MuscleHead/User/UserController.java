@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springframework.validation.annotation.Validated;
 
+import com.MuscleHead.MuscleHead.config.SecurityUtils;
 import com.MuscleHead.MuscleHead.validation.OnCreate;
 import com.MuscleHead.MuscleHead.validation.OnUpdate;
 
@@ -41,6 +42,14 @@ public class UserController {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @PostMapping("minor-signup-attempt")
+    public ResponseEntity<Void> recordMinorSignupAttempt(
+            @Valid @RequestBody MinorSignupAttemptRequest request) {
+        logger.info("Recording minor signup attempt for email: {}", request.getEmail());
+        userService.recordMinorSignupAttempt(request);
+        return ResponseEntity.noContent().build();
+    }
 
     @PostMapping
     public ResponseEntity<User> createUser(
@@ -100,6 +109,16 @@ public class UserController {
                 });
     }
 
+    @DeleteMapping("/{subId}/nemesis/{nemesisSubId}")
+    public ResponseEntity<Void> removeNemesis(
+            @PathVariable String subId,
+            @PathVariable String nemesisSubId) {
+        if (userService.removeNemesis(subId, nemesisSubId)) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
     @DeleteMapping("/{subId}")
     public ResponseEntity<Void> deleteUser(
         @PathVariable String subId 
@@ -114,6 +133,20 @@ public class UserController {
         logger.warn("User not found for deletion: sub_id: {}", subId);
        
         return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("me")
+    public ResponseEntity<User> getCurrentUser() {
+        String subId = SecurityUtils.getCurrentUserSub();
+        if (subId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return userService.getUserById(subId)
+                .map(user -> {
+                    logUserSentToFrontend(user, "me", subId);
+                    return ResponseEntity.ok(user);
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping

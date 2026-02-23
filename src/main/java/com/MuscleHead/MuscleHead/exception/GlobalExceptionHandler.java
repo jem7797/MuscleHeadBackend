@@ -97,6 +97,21 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles under-age signup attempts. Returns 403 Forbidden.
+     */
+    @ExceptionHandler(UnderAgeException.class)
+    public ResponseEntity<Map<String, Object>> handleUnderAgeException(UnderAgeException ex) {
+        logger.warn("Under-age signup blocked: {}", ex.getMessage());
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.FORBIDDEN.value());
+        errorResponse.put("error", "Forbidden");
+        errorResponse.put("message", ex.getMessage());
+        errorResponse.put("path", "N/A");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    /**
      * Handles general runtime errors (RuntimeException)
      * Returns 404 Not Found for "not found" errors, 500 for others
      */

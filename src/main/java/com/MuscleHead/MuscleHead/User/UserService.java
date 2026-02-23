@@ -1,7 +1,9 @@
 package com.MuscleHead.MuscleHead.User;
 
 import com.MuscleHead.MuscleHead.Rank.RankRepository;
+import com.MuscleHead.MuscleHead.exception.UnderAgeException;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +30,24 @@ public class UserService {
     @Autowired
     private RankRepository rankRepository;
 
+    @Autowired
+    private BlockedEmailRepository blockedEmailRepository;
+
+    private static final int MINIMUM_AGE = 13;
+
+    /**
+     * Records a minor signup attempt by adding the email to the blocked list.
+     * Called when someone under 13 attempts to sign up.
+     */
+    @Transactional
+    public void recordMinorSignupAttempt(MinorSignupAttemptRequest request) {
+        BlockedEmail blocked = new BlockedEmail();
+        blocked.setEmail(request.getEmail().trim().toLowerCase());
+        blocked.setBirth_date(request.getBirth_date());
+        blockedEmailRepository.save(blocked);
+        logger.warn("Recorded minor signup attempt: email={}, username={}", blocked.getEmail(), request.getUsername());
+    }
+
     @Transactional
     public User createNewUser(User user) {
         logger.debug("Creating new user with sub_id: {}", user != null ? user.getSub_id() : "null");
@@ -39,6 +59,39 @@ public class UserService {
             logger.warn("Attempted to create user that already exists: {}", user.getSub_id());
             throw new IllegalStateException("User already exists: " + user.getSub_id());
         }
+
+        LocalDate birthDate = user.getBirth_date();
+        if (birthDate == null && user.getBirth_year() != null) {
+            birthDate = LocalDate.of(user.getBirth_year(), 1, 1);
+        }
+        int age = birthDate != null
+                ? java.time.Period.between(birthDate, LocalDate.now()).getYears()
+                : (user.getBirth_year() != null ? LocalDate.now().getYear() - user.getBirth_year() : -1);
+
+        if (age >= 0 && age < MINIMUM_AGE) {
+            BlockedEmail blocked = new BlockedEmail();
+            blocked.setEmail(user.getEmail().trim().toLowerCase());
+            blocked.setBirth_date(birthDate != null ? birthDate : LocalDate.of(user.getBirth_year(), 1, 1));
+            blockedEmailRepository.save(blocked);
+            logger.warn("Blocked signup: under 13, email: {}", blocked.getEmail());
+            throw new UnderAgeException("You must be 13 or older to sign up.");
+        }
+
+        var existingBlock = blockedEmailRepository.findByEmail(user.getEmail().trim().toLowerCase());
+        if (existingBlock.isPresent()) {
+            BlockedEmail block = existingBlock.get();
+            if (!block.hasTurned13()) {
+                logger.warn("Blocked signup: email still blocked: {}", block.getEmail());
+                throw new UnderAgeException("This email cannot be used for signup until you are 13 or older.");
+            }
+            if (birthDate != null && birthDate.equals(block.getBirth_date())) {
+                blockedEmailRepository.delete(block);
+                logger.info("Unblocked email after user turned 13: {}", block.getEmail());
+            } else {
+                throw new UnderAgeException("This email cannot be used for signup until you are 13 or older.");
+            }
+        }
+
         // Assign default rank (Newbie, level 0) if not provided
         if (user.getRank() == null) {
             rankRepository.findByLevel(0)
@@ -213,6 +266,28 @@ public class UserService {
         userRepository.deleteById(subId);
         logger.info("User deleted successfully with sub_id: {}", subId);
         return true;
+    }
+
+    /**
+     * Removes a specific nemesis from a user's nemesis list.
+     * @return true if the nemesis was found and removed, false otherwise
+     */
+    @Transactional
+    public boolean removeNemesis(String userSubId, String nemesisSubId) {
+        if (userSubId == null || nemesisSubId == null || userSubId.equals(nemesisSubId)) {
+            return false;
+        }
+        return userRepository.findById(userSubId)
+                .map(user -> {
+                    if (user.getNemesis() == null) return false;
+                    boolean removed = user.getNemesis().removeIf(n -> nemesisSubId.equals(n.getSub_id()));
+                    if (removed) {
+                        userRepository.save(user);
+                        logger.info("User {} removed nemesis {}", userSubId, nemesisSubId);
+                    }
+                    return removed;
+                })
+                .orElse(false);
     }
 
     @Transactional

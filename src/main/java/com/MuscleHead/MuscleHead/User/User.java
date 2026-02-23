@@ -1,17 +1,22 @@
 package com.MuscleHead.MuscleHead.User;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.MuscleHead.MuscleHead.Rank.Rank;
 import com.MuscleHead.MuscleHead.Workout.SessionLog.SessionLog;
 import com.MuscleHead.MuscleHead.validation.AwsCognitoSubId;
 import com.MuscleHead.MuscleHead.validation.OnCreate;
 import com.MuscleHead.MuscleHead.validation.ValidBirthYear;
+import com.MuscleHead.MuscleHead.Follow.UserSummary;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -81,8 +86,6 @@ public class User {
     @Min(value = 0, message = "Number of followers cannot be negative")
     private int number_of_followers = 0;
 
-    
-
     @Min(value = 0, message = "Number following cannot be negative")
     private int number_following = 0;
 
@@ -101,6 +104,14 @@ public class User {
     @NotNull(message = "Birth year must be provided")
     private Integer birth_year;
 
+    /**
+     * Full date of birth for precise age calculation (e.g. under-13 checks).
+     * Required for new signups.
+     */
+    @Column(name = "birth_date", updatable = false)
+    @NotNull(message = "Date of birth is required", groups = OnCreate.class)
+    private LocalDate birth_date;
+
     @Column(updatable = false)
     private String date_created;
 
@@ -112,22 +123,46 @@ public class User {
     private String bio;
 
     @JsonIgnore
-    @OneToMany
+    @OneToMany(fetch = jakarta.persistence.FetchType.EAGER)
     private List<User> nemesis;
 
-@ElementCollection
-@CollectionTable(name = "user_workout_schedule", joinColumns = @JoinColumn(name = "user_sub_id"))
-@MapKeyColumn(name = "day_of_week")
-@Column(name = "workout_label")
-private Map<String, String> workoutSchedule = new HashMap<>();
+    /**
+     * Age in years. Uses birth_date when present, else approximates from
+     * birth_year. Returns -1 if neither available.
+     */
+    public int getAgeInYears() {
+        if (birth_date != null) {
+            return java.time.Period.between(birth_date, LocalDate.now()).getYears();
+        }
+        if (birth_year != null) {
+            return LocalDate.now().getYear() - birth_year;
+        }
+        return -1;
+    }
 
+    /**
+     * Serialized as nemesis - light UserSummary for each. Always returned (empty
+     * list if none).
+     */
+    @JsonProperty("nemesis")
+    public List<UserSummary> getNemesisForResponse() {
+        if (nemesis == null)
+            return Collections.emptyList();
+        return nemesis.stream().map(UserSummary::from).collect(Collectors.toList());
+    }
+
+    @ElementCollection
+    @CollectionTable(name = "user_workout_schedule", joinColumns = @JoinColumn(name = "user_sub_id"))
+    @MapKeyColumn(name = "day_of_week")
+    @Column(name = "workout_label")
+    private Map<String, String> workoutSchedule = new HashMap<>();
 
     @PrePersist
     protected void onCreate() {
         if (date_created == null || date_created.isBlank()) {
             date_created = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         }
-    
+
     }
 
 }

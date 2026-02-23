@@ -47,6 +47,7 @@ public class FollowService {
         }
 
         Follow follow = new Follow();
+        follow.setId(new FollowId(followerSubId, followeeSubId));
         follow.setFollower(follower);
         follow.setFollowee(followee);
         followRepository.save(follow);

@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.MuscleHead.MuscleHead.User.User;
 
-public interface FollowRepository extends JpaRepository<Follow, Long> {
+public interface FollowRepository extends JpaRepository<Follow, FollowId> {
 
     boolean existsByFollowerAndFollowee(User follower, User followee);
 

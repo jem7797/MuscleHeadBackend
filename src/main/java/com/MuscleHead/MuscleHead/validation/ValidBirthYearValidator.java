@@ -6,7 +6,7 @@ import java.time.Year;
 
 public class ValidBirthYearValidator implements ConstraintValidator<ValidBirthYear, Integer> {
 
-    private static final int MINIMUM_AGE = 16;
+    private static final int MINIMUM_AGE = 13;
 
     @Override
     public void initialize(ValidBirthYear constraintAnnotation) {

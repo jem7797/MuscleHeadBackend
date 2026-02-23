@@ -23,6 +23,9 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    @Autowired
+    private UnderAgeAccessFilter underAgeAccessFilter;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -36,9 +39,12 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll() // Error endpoints
                         .requestMatchers(HttpMethod.POST, "/user/api/").permitAll() // Allow user registration without
                                                                                     // auth
+                        .requestMatchers(HttpMethod.POST, "/user/api/minor-signup-attempt").permitAll() // Record minor
+                                                                                                        // signup attempts
                         .anyRequest().authenticated() // All other requests require authentication
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // Add JWT filter
+                .addFilterAfter(underAgeAccessFilter, JwtAuthenticationFilter.class); // Block under-13 users
 
         return http.build();
     }
