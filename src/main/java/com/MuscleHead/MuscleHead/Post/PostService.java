@@ -181,6 +181,20 @@ public class PostService {
     }
 
     /**
+     * Get posts by user sub_id (e.g. for profile page). Paginated.
+     */
+    @Transactional(readOnly = true)
+    public Page<PostResponse> getPostsByUserId(String subId, Pageable pageable) {
+        if (subId == null || subId.isBlank()) {
+            throw new IllegalArgumentException("User sub_id is required");
+        }
+        Page<Post> posts = postRepository.findByUserSubId(subId, pageable);
+        Page<PostResponse> page = posts.map(PostResponse::from);
+        page.forEach(this::enrichWithImageUrl);
+        return page;
+    }
+
+    /**
      * If imageLink is an S3 object key (not a full URL), replace it with a presigned download URL.
      */
     private void enrichWithImageUrl(PostResponse response) {

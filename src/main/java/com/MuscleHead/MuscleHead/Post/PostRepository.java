@@ -12,4 +12,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p WHERE p.user.sub_id IN :subIds ORDER BY p.timestamp DESC")
     Page<Post> findByUserSubIdIn(@Param("subIds") List<String> subIds, Pageable pageable);
+
+    @Query("SELECT p FROM Post p WHERE p.user.sub_id = :subId ORDER BY p.timestamp DESC")
+    Page<Post> findByUserSubId(@Param("subId") String subId, Pageable pageable);
 }

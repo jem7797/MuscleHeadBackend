@@ -57,6 +57,14 @@ public class PostController {
         return ResponseEntity.ok(new PostImageUploadResponse(uploadUrl, objectKey));
     }
 
+    @GetMapping("/user/{subId}")
+    public ResponseEntity<Page<PostResponse>> getPostsByUser(
+            @PathVariable("subId") String subId,
+            @PageableDefault(size = 20, sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<PostResponse> posts = postService.getPostsByUserId(subId, pageable);
+        return ResponseEntity.ok(posts);
+    }
+
     @GetMapping("/feed")
     public ResponseEntity<Page<PostResponse>> getFeed(
             @PageableDefault(size = 20, sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable) {
