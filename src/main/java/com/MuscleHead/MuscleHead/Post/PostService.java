@@ -10,6 +10,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.MuscleHead.MuscleHead.Follow.FollowRepository;
+import com.MuscleHead.MuscleHead.Post.Comment.Comment;
+import com.MuscleHead.MuscleHead.Post.Like.Like;
+import com.MuscleHead.MuscleHead.Post.Like.LikeId;
+import com.MuscleHead.MuscleHead.Post.Like.LikeRepository;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
 import com.MuscleHead.MuscleHead.cache.RedisService;
@@ -31,6 +35,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
+    private final LikeRepository likeRepository;
     private final RedisService redisService;
     private final S3Service s3Service;
     private final ObjectMapper objectMapper;
@@ -40,6 +45,7 @@ public class PostService {
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
                        FollowRepository followRepository,
+                       LikeRepository likeRepository,
                        RedisService redisService,
                        S3Service s3Service,
                        ObjectMapper objectMapper,
@@ -48,6 +54,7 @@ public class PostService {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.followRepository = followRepository;
+        this.likeRepository = likeRepository;
         this.redisService = redisService;
         this.s3Service = s3Service;
         this.objectMapper = objectMapper;
@@ -135,6 +142,55 @@ public class PostService {
         postRepository.delete(post);
         redisService.delete(POST_CACHE_PREFIX + postId);
         logger.info("Post {} deleted", postId);
+    }
+
+    /**
+     * Patch a post: increment like and/or add a comment.
+     */
+    @Transactional
+    public PostResponse patchPost(Long postId, String requesterSubId, PostPatchRequest request) {
+        if (postId == null) {
+            throw new IllegalArgumentException("Post ID is required");
+        }
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
+        User requester = userRepository.findById(requesterSubId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + requesterSubId));
+
+        boolean changed = false;
+
+        if (Boolean.TRUE.equals(request.getLike())) {
+            if (!likeRepository.existsByPostIdAndUserSubId(postId, requesterSubId)) {
+                Like like = new Like();
+                like.setId(new LikeId(postId, requesterSubId));
+                like.setPost(post);
+                like.setUser(requester);
+                likeRepository.save(like);
+                post.setLikeCount(post.getLikeCount() + 1);
+                changed = true;
+            }
+        }
+
+        if (request.getComment() != null && !request.getComment().isBlank()) {
+            Comment comment = new Comment();
+            comment.setPost(post);
+            comment.setUser(requester);
+            comment.setText(request.getComment().trim());
+            post.getComments().add(comment);
+            post.setCommentCount(post.getCommentCount() + 1);
+            changed = true;
+        }
+
+        if (!changed) {
+            return PostResponse.from(post);
+        }
+
+        Post saved = postRepository.save(post);
+        PostResponse response = PostResponse.from(saved);
+        cachePostResponse(response);
+        enrichWithImageUrl(response);
+        logger.info("Post {} patched (like={}, comment={})", postId, request.getLike(), request.getComment() != null);
+        return response;
     }
 
     /**
