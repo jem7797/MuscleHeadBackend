@@ -3,6 +3,9 @@ package com.MuscleHead.MuscleHead.Post.Like;
 import com.MuscleHead.MuscleHead.Post.Post;
 import com.MuscleHead.MuscleHead.User.User;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
@@ -22,6 +25,7 @@ public class Like {
     private LikeId id;
 
     @ManyToOne
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @MapsId("postId")
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;

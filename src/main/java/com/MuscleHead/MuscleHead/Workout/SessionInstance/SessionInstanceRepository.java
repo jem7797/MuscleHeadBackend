@@ -18,4 +18,7 @@ public interface SessionInstanceRepository extends JpaRepository<SessionInstance
 
     @Query("SELECT si FROM SessionInstance si JOIN FETCH si.movement WHERE si.sessionLog.id = :sessionId")
     java.util.List<SessionInstance> findByWorkoutSessionId(@Param("sessionId") long sessionId);
+
+    @Query("SELECT COALESCE(MAX(si.workout_highest_lift), 0) FROM SessionInstance si WHERE si.sessionLog.id = :sessionId")
+    double findMaxLiftBySessionId(@Param("sessionId") long sessionId);
 }

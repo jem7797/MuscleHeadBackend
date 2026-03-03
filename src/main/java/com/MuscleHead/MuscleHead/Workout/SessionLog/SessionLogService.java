@@ -274,6 +274,44 @@ public class SessionLogService {
                 sessionLogs.getNumberOfElements(), subId, sessionLogs.getTotalElements());
         return sessionLogs;
     }
+
+    /**
+     * Returns the max lift for a workout. Computes from session instances if
+     * session_highest_lift is null, and stores it on the session.
+     */
+    @Transactional
+    public double getMaxLiftAndStore(long sessionLogId) {
+        SessionLog sessionLog = getSessionLogById(sessionLogId);
+        double maxFromInstances = sessionInstanceRepository.findMaxLiftBySessionId(sessionLogId);
+        Double stored = sessionLog.getSession_highest_lift();
+        if (stored == null || maxFromInstances > stored) {
+            sessionLog.setSession_highest_lift(maxFromInstances);
+            sessionLogRepository.save(sessionLog);
+            logger.debug("Stored max lift {} for session {}", maxFromInstances, sessionLogId);
+        }
+        return stored != null && stored > maxFromInstances ? stored : maxFromInstances;
+    }
+
+    /**
+     * Syncs max lift for all of a user's workouts by computing from session
+     * instances and storing on each SessionLog.
+     */
+    @Transactional
+    public int syncMaxLiftsForUser(String subId) {
+        List<SessionLog> sessions = sessionLogRepository.findByUser_SubId(subId);
+        int updated = 0;
+        for (SessionLog session : sessions) {
+            double maxFromInstances = sessionInstanceRepository.findMaxLiftBySessionId(session.getId());
+            Double stored = session.getSession_highest_lift();
+            if (stored == null || maxFromInstances > (stored != null ? stored : 0)) {
+                session.setSession_highest_lift(maxFromInstances);
+                sessionLogRepository.save(session);
+                updated++;
+            }
+        }
+        logger.info("Synced max lifts for {} workouts ({} updated) for user {}", sessions.size(), updated, subId);
+        return updated;
+    }
 }
 
 

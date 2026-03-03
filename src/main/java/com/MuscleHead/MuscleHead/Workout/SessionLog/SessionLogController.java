@@ -117,4 +117,29 @@ public class SessionLogController {
             throw ex;
         }
     }
+
+    @GetMapping("/{id}/max-lift")
+    public ResponseEntity<MaxLiftResponse> getMaxLift(@PathVariable("id") long sessionLogId) {
+        logger.debug("Getting max lift for session: {}", sessionLogId);
+        try {
+            double maxLift = sessionLogService.getMaxLiftAndStore(sessionLogId);
+            return ResponseEntity.ok(new MaxLiftResponse(sessionLogId, maxLift));
+        } catch (RuntimeException ex) {
+            logger.warn("Session log not found for max-lift: {}", sessionLogId);
+            throw ex;
+        }
+    }
+
+    @GetMapping("/user/{subId}/sync-max-lifts")
+    public ResponseEntity<SyncMaxLiftsResponse> syncMaxLifts(@PathVariable("subId") String subId) {
+        String authSubId = SecurityUtils.getCurrentUserSub();
+        if (authSubId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (!authSubId.equals(subId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        int updated = sessionLogService.syncMaxLiftsForUser(subId);
+        return ResponseEntity.ok(new SyncMaxLiftsResponse(updated));
+    }
 }
