@@ -16,6 +16,6 @@ public interface SessionInstanceRepository extends JpaRepository<SessionInstance
     @Query("SELECT si FROM SessionInstance si WHERE si.user.sub_id = :subId")
     java.util.List<SessionInstance> findByUser_SubId(@Param("subId") String subId);
 
-    @Query("SELECT si FROM SessionInstance si WHERE si.sessionLog.id = :sessionId")
+    @Query("SELECT si FROM SessionInstance si JOIN FETCH si.movement WHERE si.sessionLog.id = :sessionId")
     java.util.List<SessionInstance> findByWorkoutSessionId(@Param("sessionId") long sessionId);
 }

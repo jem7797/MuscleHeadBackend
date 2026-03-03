@@ -72,6 +72,15 @@ public class SessionInstanceController {
         return ResponseEntity.notFound().build();
     }
 
+    @GetMapping("/session/{sessionId}")
+    public ResponseEntity<java.util.List<SessionInstance>> getSessionInstancesBySession(
+            @PathVariable("sessionId") long sessionId) {
+        logger.debug("Getting session instances for workout session: {}", sessionId);
+        java.util.List<SessionInstance> sessionInstances = sessionInstanceService.getSessionInstancesBySessionId(sessionId);
+        logger.debug("Found {} exercises for workout session: {}", sessionInstances.size(), sessionId);
+        return ResponseEntity.ok(sessionInstances);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<SessionInstance> getSessionInstanceById(@PathVariable("id") long sessionInstanceId) {
         logger.debug("Getting session instance by id: {}", sessionInstanceId);

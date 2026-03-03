@@ -38,7 +38,8 @@ public class WorkoutTemplateController {
     private UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<WorkoutTemplateResponse> createWorkoutTemplate(@Valid @RequestBody WorkoutTemplateRequest request) {
+    public ResponseEntity<WorkoutTemplateResponse> createWorkoutTemplate(
+            @Valid @RequestBody WorkoutTemplateRequest request) {
         logger.info("Creating new workout template: {}", request.getName());
 
         // Resolve authenticated user
@@ -56,7 +57,8 @@ public class WorkoutTemplateController {
 
         try {
             WorkoutTemplate createdWorkoutTemplate = workoutTemplate.createWorkoutTemplate(user, request);
-            logger.info("Successfully created workout template with id: {} for user: {}", createdWorkoutTemplate.getId(), subId);
+            logger.info("Successfully created workout template with id: {} for user: {}",
+                    createdWorkoutTemplate.getId(), subId);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new WorkoutTemplateResponse(createdWorkoutTemplate.getId()));
         } catch (IllegalArgumentException ex) {
@@ -109,6 +111,16 @@ public class WorkoutTemplateController {
                     logger.warn("Workout template not found for update: id: {}", workoutTemplateId);
                     return ResponseEntity.notFound().build();
                 });
+    }
+
+    @DeleteMapping("/all")
+    public ResponseEntity<Integer> deleteAllWorkoutTemplates() {
+        String subId = SecurityUtils.getCurrentUserSub();
+        if (subId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        int deleted = workoutTemplate.deleteAllWorkoutTemplates();
+        return ResponseEntity.ok(deleted);
     }
 
     @DeleteMapping("/{workoutTemplateId}")

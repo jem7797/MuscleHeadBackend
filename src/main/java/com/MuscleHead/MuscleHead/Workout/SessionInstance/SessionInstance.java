@@ -5,6 +5,7 @@ import java.util.List;
 import com.MuscleHead.MuscleHead.Movement.Movement;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.Workout.SessionLog.SessionLog;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
@@ -33,16 +34,19 @@ public class SessionInstance {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sub_id", referencedColumnName = "sub_id", nullable = false)
     @NotNull(message = "User is required")
+    @JsonIgnore
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "workout_session_id", nullable = false)
     @NotNull(message = "Session log is required")
+    @JsonIgnore
     private SessionLog sessionLog;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "exercise_id", nullable = false)
     @NotNull(message = "Exercise is required")
+    @JsonIgnore
     private Movement movement;
 
     @ElementCollection

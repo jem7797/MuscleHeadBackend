@@ -6,6 +6,7 @@ import java.util.List;
 import com.MuscleHead.MuscleHead.Routine.WorkoutTemplate.WorkoutTemplate;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.Workout.SessionInstance.SessionInstance;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -35,6 +36,7 @@ public class SessionLog {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "sub_id", referencedColumnName = "sub_id", nullable = false)
     @NotNull(message = "User is required")
+    @JsonIgnore
     private User user;
 
     @Column(updatable = false, columnDefinition = "TIMESTAMP")
@@ -45,6 +47,7 @@ public class SessionLog {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "routine_id")
+    @JsonIgnore
     private WorkoutTemplate routine;
 
     @PositiveOrZero(message = "Total weight lifted cannot be negative")
@@ -57,6 +60,7 @@ public class SessionLog {
     private Double total_duration;
 
     @OneToMany(mappedBy = "sessionLog", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<SessionInstance> sessionInstances;
 
     //stored in seconds

@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -16,6 +17,9 @@ import lombok.NoArgsConstructor;
 public class WorkoutTemplateRequest {
     @NotBlank(message = "WorkoutTemplate name cannot be blank")
     private String name;
+
+    @Positive(message = "Sets must be a positive number")
+    private Integer sets;
 
     @NotNull(message = "Exercises list is required")
     @NotEmpty(message = "Exercises list cannot be empty")

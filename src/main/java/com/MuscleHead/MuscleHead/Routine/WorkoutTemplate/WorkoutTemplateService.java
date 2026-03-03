@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.MuscleHead.MuscleHead.Movement.Movement;
 import com.MuscleHead.MuscleHead.Movement.MovementRepository;
 import com.MuscleHead.MuscleHead.Routine.ExerciseInstance.ExerciseInstance;
+import com.MuscleHead.MuscleHead.Workout.SessionLog.SessionLogRepository;
 import com.MuscleHead.MuscleHead.Routine.ExerciseInstance.ExerciseInstanceRequest;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
@@ -31,7 +32,9 @@ public class WorkoutTemplateService {
     @Autowired
     private MovementRepository exerciseRepository;
 
-    
+    @Autowired
+    private SessionLogRepository sessionLogRepository;
+
     @Transactional
     public WorkoutTemplate createWorkoutTemplate(User user, WorkoutTemplateRequest request) {
         logger.debug("Creating new workout template: {} for user: {}",
@@ -80,7 +83,8 @@ public class WorkoutTemplateService {
             exerciseInstance.setExercise(exercise);
             exerciseInstance.setOrderIndex(exerciseRequest.getOrderIndex());
             exerciseInstance.setReps(exerciseRequest.getReps());
-            exerciseInstance.setSets(exerciseRequest.getSets());
+            Integer sets = exerciseRequest.getSets() != null ? exerciseRequest.getSets() : request.getSets();
+            exerciseInstance.setSets(sets != null ? sets : 3);
 
             exerciseInstances.add(exerciseInstance);
         }
@@ -219,6 +223,19 @@ public class WorkoutTemplateService {
         workoutTemplateRepository.deleteById(workoutTemplateId);
         logger.info("Workout template deleted successfully with id: {}", workoutTemplateId);
         return true;
+    }
+
+    @Transactional
+    public int deleteAllWorkoutTemplates() {
+        List<WorkoutTemplate> all = workoutTemplateRepository.findAll();
+        int count = all.size();
+        if (count == 0) {
+            return 0;
+        }
+        sessionLogRepository.clearAllRoutineReferences();
+        workoutTemplateRepository.deleteAll();
+        logger.info("Deleted all {} workout templates", count);
+        return count;
     }
 
     public Optional<WorkoutTemplate> getWorkoutTemplateById(Long workoutTemplateId) {

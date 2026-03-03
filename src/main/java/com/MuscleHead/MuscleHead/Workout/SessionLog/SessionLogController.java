@@ -93,6 +93,18 @@ public class SessionLogController {
         return ResponseEntity.notFound().build();
     }
 
+    @GetMapping("/user/{subId}")
+    public ResponseEntity<Page<SessionLog>> getSessionLogsForUser(
+            @PathVariable("subId") String subId,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+        logger.debug("Getting session logs for user: {} with page: {}, size: {}",
+                subId, pageable.getPageNumber(), pageable.getPageSize());
+        Page<SessionLog> sessionLogs = sessionLogService.getSessionLogsByUserId(subId, pageable);
+        logger.debug("Found {} session logs for user: {} (page {} of {})",
+                sessionLogs.getNumberOfElements(), subId, sessionLogs.getNumber(), sessionLogs.getTotalPages());
+        return ResponseEntity.ok(sessionLogs);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<SessionLog> getSessionLogById(@PathVariable("id") long sessionLogId) {
         logger.debug("Getting session log by id: {}", sessionLogId);
@@ -104,17 +116,5 @@ public class SessionLogController {
             logger.warn("Session log not found with id: {}", sessionLogId);
             throw ex;
         }
-    }
-
-    @GetMapping("/user/{subId}")
-    public ResponseEntity<Page<SessionLog>> getSessionLogsForUser(
-            @PathVariable("subId") String subId,
-            @PageableDefault(size = 10, sort = "date", direction = Sort.Direction.DESC) Pageable pageable) {
-        logger.debug("Getting session logs for user: {} with page: {}, size: {}",
-                subId, pageable.getPageNumber(), pageable.getPageSize());
-        Page<SessionLog> sessionLogs = sessionLogService.getSessionLogsByUserId(subId, pageable);
-        logger.debug("Found {} session logs for user: {} (page {} of {})",
-                sessionLogs.getNumberOfElements(), subId, sessionLogs.getNumber(), sessionLogs.getTotalPages());
-        return ResponseEntity.ok(sessionLogs);
     }
 }
