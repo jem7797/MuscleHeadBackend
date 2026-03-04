@@ -1,5 +1,7 @@
 package com.MuscleHead.MuscleHead.User;
 
+import com.MuscleHead.MuscleHead.Notification.NotificationService;
+import com.MuscleHead.MuscleHead.Notification.NotificationType;
 import com.MuscleHead.MuscleHead.Rank.RankRepository;
 import com.MuscleHead.MuscleHead.exception.UnderAgeException;
 
@@ -32,6 +34,9 @@ public class UserService {
 
     @Autowired
     private BlockedEmailRepository blockedEmailRepository;
+
+    @Autowired
+    private NotificationService notificationService;
 
     private static final int MINIMUM_AGE = 13;
 
@@ -371,10 +376,15 @@ public class UserService {
         int rankLevel = Math.min(xp / 5, 19);
         rankRepository.findByLevel(rankLevel)
                 .ifPresent(rank -> {
+                    boolean actuallyLeveledUp = user.getRank() == null || user.getRank().getLevel() != rankLevel;
                     user.setRank(rank);
                     userRepository.save(user);
                     logger.info("User {} leveled up to rank level {} ({})", user.getSub_id(), rankLevel,
                             rank.getName());
+                    if (actuallyLeveledUp && rankLevel > 0) {
+                        String message = "You leveled up to " + rank.getName() + "!";
+                        notificationService.createNotification(user, NotificationType.LEVEL_UP, message);
+                    }
                 });
     }
 }

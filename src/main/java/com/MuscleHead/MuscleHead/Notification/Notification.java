@@ -1,12 +1,15 @@
 package com.MuscleHead.MuscleHead.Notification;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 
 import com.MuscleHead.MuscleHead.User.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -14,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -27,26 +31,29 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "recipient_sub_id", referencedColumnName = "sub_id", nullable = false)
-    private User recipient;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "sub_id", referencedColumnName = "sub_id", nullable = false)
+    @NotNull(message = "User is required")
+    @JsonIgnore
+    private User user;
 
-    @ManyToOne
-    @JoinColumn(name = "actor_sub_id", referencedColumnName = "sub_id", nullable = false)
-    private User actor;
+    @Enumerated(EnumType.STRING)
+    @NotNull(message = "Notification type is required")
+    private NotificationType type;
 
-    @Column(nullable = false)
-    private String type;
+    @NotNull(message = "Message is required")
+    private String message;
 
-    private boolean read = false;
+    @Column(name = "is_read")
+    private boolean isRead = false;
 
-    @Column(nullable = false)
-    private String createdAt;
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
 
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null || createdAt.isBlank()) {
-            createdAt = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        if (createdAt == null) {
+            createdAt = Instant.now();
         }
     }
 }

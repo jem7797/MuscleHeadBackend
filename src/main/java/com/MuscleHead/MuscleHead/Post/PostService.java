@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.MuscleHead.MuscleHead.Follow.FollowRepository;
+import com.MuscleHead.MuscleHead.Notification.NotificationService;
+import com.MuscleHead.MuscleHead.Notification.NotificationType;
 import com.MuscleHead.MuscleHead.Post.Comment.Comment;
 import com.MuscleHead.MuscleHead.Post.Like.Like;
 import com.MuscleHead.MuscleHead.Post.Like.LikeId;
@@ -36,6 +38,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final LikeRepository likeRepository;
+    private final NotificationService notificationService;
     private final RedisService redisService;
     private final S3Service s3Service;
     private final ObjectMapper objectMapper;
@@ -46,6 +49,7 @@ public class PostService {
                        UserRepository userRepository,
                        FollowRepository followRepository,
                        LikeRepository likeRepository,
+                       NotificationService notificationService,
                        RedisService redisService,
                        S3Service s3Service,
                        ObjectMapper objectMapper,
@@ -55,6 +59,7 @@ public class PostService {
         this.userRepository = userRepository;
         this.followRepository = followRepository;
         this.likeRepository = likeRepository;
+        this.notificationService = notificationService;
         this.redisService = redisService;
         this.s3Service = s3Service;
         this.objectMapper = objectMapper;
@@ -115,6 +120,11 @@ public class PostService {
 
         user.setNumber_of_posts(user.getNumber_of_posts() + 1);
         userRepository.save(user);
+
+        for (User watcher : userRepository.findUsersWhoHaveAsNemesis(user.getSub_id())) {
+            String message = user.getUsername() + " (your nemesis) just posted!";
+            notificationService.createNotification(watcher, NotificationType.NEMESIS_POST, message);
+        }
 
         PostResponse response = PostResponse.from(saved);
         cachePostResponse(response);

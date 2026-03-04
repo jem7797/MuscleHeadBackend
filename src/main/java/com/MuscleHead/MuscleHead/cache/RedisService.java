@@ -40,4 +40,16 @@ public class RedisService {
             jedis.del(key);
         }
     }
+
+    /**
+     * Deletes all keys matching the given pattern. Use sparingly (e.g. per-user invalidation).
+     */
+    public void deleteKeysByPattern(String pattern) {
+        try (Jedis jedis = jedisPool.getResource()) {
+            var keys = jedis.keys(pattern);
+            if (!keys.isEmpty()) {
+                jedis.del(keys.toArray(new String[0]));
+            }
+        }
+    }
 }

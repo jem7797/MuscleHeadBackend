@@ -35,7 +35,7 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getNotificationsForUser(subId, pageable));
     }
 
-    @PatchMapping("{id}/read")
+    @PatchMapping("/{id}/read")
     public ResponseEntity<Void> markAsRead(@PathVariable Long id) {
         String subId = SecurityUtils.getCurrentUserSub();
         if (subId == null) {
