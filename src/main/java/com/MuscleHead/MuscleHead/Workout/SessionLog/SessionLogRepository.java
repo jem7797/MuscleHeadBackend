@@ -18,6 +18,9 @@ public interface SessionLogRepository extends JpaRepository<SessionLog, Long> {
     @Query("SELECT sl FROM SessionLog sl WHERE sl.user.sub_id = :subId")
     java.util.List<SessionLog> findByUser_SubId(@Param("subId") String subId);
 
+    @Query("SELECT COUNT(sl) FROM SessionLog sl WHERE sl.user.sub_id = :subId")
+    long countByUser_SubId(@Param("subId") String subId);
+
     @Modifying
     @Query("UPDATE SessionLog s SET s.routine = null WHERE s.routine IS NOT NULL")
     void clearAllRoutineReferences();

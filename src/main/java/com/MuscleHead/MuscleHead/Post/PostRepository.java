@@ -15,4 +15,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query("SELECT p FROM Post p WHERE p.user.sub_id = :subId ORDER BY p.timestamp DESC")
     Page<Post> findByUserSubId(@Param("subId") String subId, Pageable pageable);
+
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.user.sub_id = :subId")
+    long countByUser_SubId(@Param("subId") String subId);
+
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.user.sub_id = :subId AND p.imageLink IS NOT NULL AND p.imageLink != ''")
+    long countByUser_SubIdAndImageLinkNotNull(@Param("subId") String subId);
+
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.user.sub_id = :subId AND (p.imageLink IS NULL OR p.imageLink = '')")
+    long countByUser_SubIdAndImageLinkNullOrEmpty(@Param("subId") String subId);
 }

@@ -14,4 +14,10 @@ public class NotificationResponse {
     private String message;
     private String createdAt;
     private boolean read;
+    /** Present when type is MEDAL_EARNED */
+    private Long medalId;
+    /** Present when type is MEDAL_EARNED */
+    private String medalName;
+    /** Present when type is MEDAL_EARNED */
+    private String medalDescription;
 }

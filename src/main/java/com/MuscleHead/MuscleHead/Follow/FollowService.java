@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.MuscleHead.MuscleHead.Medal.MedalService;
 import com.MuscleHead.MuscleHead.Notification.NotificationService;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
@@ -27,6 +28,9 @@ public class FollowService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private MedalService medalService;
 
     @Transactional
     public void follow(String followerSubId, String followeeSubId) {
@@ -58,6 +62,7 @@ public class FollowService {
         userRepository.save(followee);
 
         notificationService.createFollowNotification(followee, follower);
+        medalService.checkFollowerMedals(followee);
 
         logger.info("User {} followed user {}", followerSubId, followeeSubId);
     }

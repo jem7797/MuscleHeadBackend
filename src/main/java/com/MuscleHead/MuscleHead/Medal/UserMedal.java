@@ -1,4 +1,4 @@
-package com.MuscleHead.MuscleHead.Notification;
+package com.MuscleHead.MuscleHead.Medal;
 
 import java.time.Instant;
 
@@ -22,44 +22,33 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "user_medals")
 @Data
 @NoArgsConstructor
-public class Notification {
+public class UserMedal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "sub_id", referencedColumnName = "sub_id", nullable = false)
-    @NotNull(message = "User is required")
+    @JoinColumn(name = "user_id", referencedColumnName = "sub_id", nullable = false)
+    @NotNull
     @JsonIgnore
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @NotNull(message = "Notification type is required")
-    private NotificationType type;
+    @Column(name = "medal_name", nullable = false)
+    @NotNull
+    private MedalName medalName;
 
-    @NotNull(message = "Message is required")
-    private String message;
-
-    @Column(name = "medal_id")
-    private Long medalId;
-
-    @Column(name = "medal_name")
-    private String medalName;
-
-    @Column(name = "is_read")
-    private boolean isRead = false;
-
-    @Column(nullable = false, updatable = false)
-    private Instant createdAt;
+    @Column(name = "awarded_at", nullable = false, updatable = false)
+    private Instant awardedAt;
 
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = Instant.now();
+        if (awardedAt == null) {
+            awardedAt = Instant.now();
         }
     }
 }

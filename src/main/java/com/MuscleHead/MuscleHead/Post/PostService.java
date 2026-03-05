@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.MuscleHead.MuscleHead.Follow.FollowRepository;
+import com.MuscleHead.MuscleHead.Medal.MedalService;
 import com.MuscleHead.MuscleHead.Notification.NotificationService;
 import com.MuscleHead.MuscleHead.Notification.NotificationType;
 import com.MuscleHead.MuscleHead.Post.Comment.Comment;
@@ -39,6 +40,7 @@ public class PostService {
     private final FollowRepository followRepository;
     private final LikeRepository likeRepository;
     private final NotificationService notificationService;
+    private final MedalService medalService;
     private final RedisService redisService;
     private final S3Service s3Service;
     private final ObjectMapper objectMapper;
@@ -50,6 +52,7 @@ public class PostService {
                        FollowRepository followRepository,
                        LikeRepository likeRepository,
                        NotificationService notificationService,
+                       MedalService medalService,
                        RedisService redisService,
                        S3Service s3Service,
                        ObjectMapper objectMapper,
@@ -60,6 +63,7 @@ public class PostService {
         this.followRepository = followRepository;
         this.likeRepository = likeRepository;
         this.notificationService = notificationService;
+        this.medalService = medalService;
         this.redisService = redisService;
         this.s3Service = s3Service;
         this.objectMapper = objectMapper;
@@ -125,6 +129,9 @@ public class PostService {
             String message = user.getUsername() + " (your nemesis) just posted!";
             notificationService.createNotification(watcher, NotificationType.NEMESIS_POST, message);
         }
+
+        boolean hasImage = request.getImageLink() != null && !request.getImageLink().isBlank();
+        medalService.checkPostMedals(user, hasImage);
 
         PostResponse response = PostResponse.from(saved);
         cachePostResponse(response);
@@ -196,6 +203,12 @@ public class PostService {
         }
 
         Post saved = postRepository.save(post);
+        if (Boolean.TRUE.equals(request.getLike())) {
+            medalService.checkPostLikeMedals(post.getUser(), saved.getLikeCount());
+        }
+        if (request.getComment() != null && !request.getComment().isBlank()) {
+            medalService.checkCommentMedals(requester);
+        }
         PostResponse response = PostResponse.from(saved);
         cachePostResponse(response);
         enrichWithImageUrl(response);

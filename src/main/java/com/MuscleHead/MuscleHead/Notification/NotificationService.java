@@ -44,6 +44,21 @@ public class NotificationService {
         return saved;
     }
 
+    /**
+     * Creates a MEDAL_EARNED notification with medal info for the frontend.
+     */
+    public Notification createMedalNotification(User user, com.MuscleHead.MuscleHead.Medal.UserMedal medal, String message) {
+        Notification n = new Notification();
+        n.setUser(user);
+        n.setType(NotificationType.MEDAL_EARNED);
+        n.setMessage(message);
+        n.setMedalId(medal.getId());
+        n.setMedalName(medal.getMedalName() != null ? medal.getMedalName().name() : null);
+        Notification saved = notificationRepository.save(n);
+        invalidateCacheForUser(user.getSub_id());
+        return saved;
+    }
+
     public void createFollowNotification(User followee, User follower) {
         String message = follower.getUsername() + " started following you";
         createNotification(followee, NotificationType.FOLLOW, message);
@@ -99,11 +114,24 @@ public class NotificationService {
         String createdAtStr = n.getCreatedAt() != null
                 ? n.getCreatedAt().atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
                 : null;
+        Long medalId = n.getMedalId();
+        String medalName = n.getMedalName();
+        String medalDescription = null;
+        if (medalName != null && !medalName.isBlank()) {
+            try {
+                medalDescription = com.MuscleHead.MuscleHead.Medal.MedalName.valueOf(medalName).getDescription();
+            } catch (IllegalArgumentException ignored) {
+                // enum value may have been removed
+            }
+        }
         return new NotificationResponse(
                 n.getId(),
                 n.getType(),
                 n.getMessage(),
                 createdAtStr,
-                n.isRead());
+                n.isRead(),
+                medalId,
+                medalName,
+                medalDescription);
     }
 }

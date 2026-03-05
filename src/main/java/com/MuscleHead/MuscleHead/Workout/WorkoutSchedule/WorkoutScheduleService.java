@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.MuscleHead.MuscleHead.Medal.MedalService;
 import com.MuscleHead.MuscleHead.User.User;
 
 import jakarta.transaction.Transactional;
@@ -20,6 +21,9 @@ public class WorkoutScheduleService {
     @Autowired
     private WorkoutScheduleRepository workoutScheduleRepository;
 
+    @Autowired
+    private MedalService medalService;
+
     @Transactional
     public WorkoutSchedule create(User user, WorkoutScheduleRequest request) {
         logger.debug("Creating workout schedule for user: {}", user.getSub_id());
@@ -28,6 +32,7 @@ public class WorkoutScheduleService {
         schedule.setDay_of_the_week(request.getDay_of_the_week());
         schedule.setLabel(request.getLabel() != null ? request.getLabel() : "");
         WorkoutSchedule saved = workoutScheduleRepository.save(schedule);
+        medalService.checkScheduleMedals(user);
         logger.info("Created workout schedule id: {} for user: {}", saved.getId(), user.getSub_id());
         return saved;
     }
@@ -44,7 +49,9 @@ public class WorkoutScheduleService {
                     if (request.getLabel() != null) {
                         ws.setLabel(request.getLabel());
                     }
-                    return workoutScheduleRepository.save(ws);
+                    WorkoutSchedule saved = workoutScheduleRepository.save(ws);
+                    medalService.checkScheduleMedals(saved.getUser());
+                    return saved;
                 });
     }
 

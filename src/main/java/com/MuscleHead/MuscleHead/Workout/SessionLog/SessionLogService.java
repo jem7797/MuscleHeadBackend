@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.MuscleHead.MuscleHead.Medal.MedalService;
 import com.MuscleHead.MuscleHead.Movement.Movement;
 import com.MuscleHead.MuscleHead.Movement.MovementRepository;
 import com.MuscleHead.MuscleHead.Routine.WorkoutTemplate.WorkoutTemplate;
@@ -47,6 +48,9 @@ public class SessionLogService {
 
     @Autowired
     WorkoutTemplateRepository workoutTemplateRepository;
+
+    @Autowired
+    MedalService medalService;
 
     @Transactional
     public SessionLog createSessionLog(User user, SessionLogRequest request) {
@@ -137,6 +141,7 @@ public class SessionLogService {
         user.setLifetime_gym_time(user.getLifetime_gym_time() + gymTime);
         userRepository.save(user);
         userService.levelUp(user);
+        medalService.checkAndAwardMedals(user, savedSessionLog);
 
         logger.info("Session log created successfully with id: {} for user: {} with {} exercises",
                 savedSessionLog.getId(), savedSessionLog.getUser().getSub_id(), sessionInstances.size());
@@ -165,6 +170,7 @@ public class SessionLogService {
         user.setLifetime_gym_time(user.getLifetime_gym_time() + savedSessionLog.getTimeSpentInGym());
         userRepository.save(user);
         userService.levelUp(user);
+        medalService.checkAndAwardMedals(user, savedSessionLog);
 
         logger.info("Session log created successfully with id: {} for user: {}",
                 savedSessionLog.getId(), savedSessionLog.getUser().getSub_id());
@@ -190,13 +196,18 @@ public class SessionLogService {
             logger.warn("Attempted to delete session log with invalid id: 0");
             return false;
         }
-        if (!sessionLogRepository.existsById(sessionLogId)) {
-            logger.warn("Session log not found for deletion: id: {}", sessionLogId);
-            return false;
-        }
-        sessionLogRepository.deleteById(sessionLogId);
-        logger.info("Session log deleted successfully with id: {}", sessionLogId);
-        return true;
+        return sessionLogRepository.findById(sessionLogId)
+                .map(sessionLog -> {
+                    User user = sessionLog.getUser();
+                    sessionLogRepository.delete(sessionLog);
+                    medalService.checkDeleteMedal(user);
+                    logger.info("Session log deleted successfully with id: {}", sessionLogId);
+                    return true;
+                })
+                .orElseGet(() -> {
+                    logger.warn("Session log not found for deletion: id: {}", sessionLogId);
+                    return false;
+                });
     }
 
     @Transactional
