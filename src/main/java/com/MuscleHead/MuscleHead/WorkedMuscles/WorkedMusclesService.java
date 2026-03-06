@@ -1,14 +1,14 @@
 package com.MuscleHead.MuscleHead.WorkedMuscles;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +26,9 @@ import jakarta.transaction.Transactional;
 public class WorkedMusclesService {
 
     private static final Logger logger = LoggerFactory.getLogger(WorkedMusclesService.class);
-    private static final String CACHE_PREFIX = "workedMuscles:v2:";
+    private static final String CACHE_PREFIX = "workedMuscles:v4:";
     private static final int DEFAULT_CACHE_TTL_SECONDS = 300; // 5 minutes
+    private static final int DEFAULT_EXPIRY_HOURS = 48;
 
     /** Canonical muscle group names stored in DB (fine-grained, no Arms) */
     private static final Set<String> CANONICAL_NAMES = Set.of(
@@ -97,8 +98,12 @@ public class WorkedMusclesService {
     @Value("${worked-muscles.cache.ttl-seconds:" + DEFAULT_CACHE_TTL_SECONDS + "}")
     private int cacheTtlSeconds;
 
+    @Value("${worked-muscles.expiry-hours:" + DEFAULT_EXPIRY_HOURS + "}")
+    private int expiryHours;
+
     /**
      * Upsert worked muscle groups from a session's exercises.
+     * Each canonical muscle group gets its own row with expires_at = NOW() + expiry-hours.
      * Caller must ensure the authenticated user matches userId (or has permission).
      */
     @Transactional
@@ -124,32 +129,19 @@ public class WorkedMusclesService {
             return;
         }
 
-        Optional<WorkedMuscles> existing = repository.findByUserId(userId);
-        Set<String> merged = new HashSet<>(canonicalFromSession);
-        if (existing.isPresent()) {
-            List<String> stored = existing.get().getMuscleGroups();
-            if (stored != null) {
-                merged.addAll(stored);
+        for (String muscleGroup : canonicalFromSession) {
+            if (CANONICAL_NAMES.contains(muscleGroup)) {
+                repository.upsertMuscleGroup(userId, muscleGroup, expiryHours);
             }
         }
 
-        List<String> toStore = merged.stream()
-                .filter(CANONICAL_NAMES::contains)
-                .sorted()
-                .collect(Collectors.toList());
-
-        WorkedMuscles entity = existing.orElse(new WorkedMuscles());
-        entity.setUserId(userId);
-        entity.setMuscleGroups(toStore);
-        entity.setUpdatedAt(Instant.now());
-        repository.save(entity);
-
         bustCache(userId);
-        logger.debug("Upserted worked muscles for user {}: {}", userId, toStore);
+        logger.debug("Upserted worked muscles for user {}: {} (expires in {} hours)", userId, canonicalFromSession, expiryHours);
     }
 
     /**
      * Get worked muscles for a user, translated to SVG IDs for frontend.
+     * Only returns non-expired muscle groups.
      * Returns cached response when available.
      */
     public WorkedMusclesResponse getWorkedMuscles(String userId) {
@@ -178,21 +170,27 @@ public class WorkedMusclesService {
     }
 
     private WorkedMusclesResponse buildResponseFromDb(String userId) {
-        Optional<WorkedMuscles> opt = repository.findByUserId(userId);
-        if (opt.isEmpty() || opt.get().getMuscleGroups() == null || opt.get().getMuscleGroups().isEmpty()) {
+        List<WorkedMuscles> active = repository.findByUserIdAndExpiresAtAfter(userId, LocalDateTime.now());
+        if (active == null || active.isEmpty()) {
             return emptyResponse();
         }
 
-        List<String> canonical = opt.get().getMuscleGroups();
-        Set<String> frontSet = new LinkedHashSet<>();
-        Set<String> backSet = new LinkedHashSet<>();
+        List<MuscleWithExpiry> frontWorked = new ArrayList<>();
+        List<MuscleWithExpiry> backWorked = new ArrayList<>();
 
-        for (String c : canonical) {
-            CANONICAL_TO_FRONT.getOrDefault(c, List.of()).forEach(frontSet::add);
-            CANONICAL_TO_BACK.getOrDefault(c, List.of()).forEach(backSet::add);
+        for (WorkedMuscles wm : active) {
+            String canonical = wm.getMuscleGroup();
+            Instant expiresAt = wm.getExpiresAt().atZone(ZoneId.of("UTC")).toInstant();
+
+            for (String muscleId : CANONICAL_TO_FRONT.getOrDefault(canonical, List.of())) {
+                frontWorked.add(new MuscleWithExpiry(muscleId, expiresAt));
+            }
+            for (String muscleId : CANONICAL_TO_BACK.getOrDefault(canonical, List.of())) {
+                backWorked.add(new MuscleWithExpiry(muscleId, expiresAt));
+            }
         }
 
-        return new WorkedMusclesResponse(new ArrayList<>(frontSet), new ArrayList<>(backSet));
+        return new WorkedMusclesResponse(frontWorked, backWorked);
     }
 
     private static WorkedMusclesResponse emptyResponse() {
@@ -246,5 +244,17 @@ public class WorkedMusclesService {
             logger.warn("Failed to parse cached worked muscles: {}", e.getMessage());
             return emptyResponse();
         }
+    }
+
+    /**
+     * Delete expired rows from worked_muscles. Called by scheduled job.
+     */
+    @Transactional
+    public int deleteExpiredRows() {
+        int deleted = repository.deleteExpiredRows();
+        if (deleted > 0) {
+            logger.info("Deleted {} expired worked_muscles rows", deleted);
+        }
+        return deleted;
     }
 }

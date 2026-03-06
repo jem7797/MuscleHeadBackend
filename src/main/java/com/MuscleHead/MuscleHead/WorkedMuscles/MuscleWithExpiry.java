@@ -1,6 +1,6 @@
 package com.MuscleHead.MuscleHead.WorkedMuscles;
 
-import java.util.List;
+import java.time.Instant;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class WorkedMusclesResponse {
+public class MuscleWithExpiry {
 
-    private List<MuscleWithExpiry> frontWorked;
-    private List<MuscleWithExpiry> backWorked;
+    private String muscleId;
+    private Instant expiresAt;
 }

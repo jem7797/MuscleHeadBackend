@@ -62,15 +62,24 @@ Use this document to compare backend implementation with the frontend.
 **Response:** `200 OK`
 ```json
 {
-  "frontWorked": ["chest", "biceps", "triceps", "delts"],
-  "backWorked": ["triceps", "delts"]
+  "frontWorked": [
+    { "muscleId": "pecs", "expiresAt": "2026-03-07T18:00:00Z" },
+    { "muscleId": "delts", "expiresAt": "2026-03-07T18:00:00Z" }
+  ],
+  "backWorked": [
+    { "muscleId": "lats", "expiresAt": "2026-03-07T20:00:00Z" }
+  ]
 }
 ```
 
 | Field | Type | Notes |
 |-------|------|-------|
-| frontWorked | string[] | Muscle IDs for front-view SVG (MuscleManFront) |
-| backWorked | string[] | Muscle IDs for back-view SVG (MuscleManBack) |
+| frontWorked | object[] | Muscle entries for front-view SVG (MuscleManFront) |
+| frontWorked[].muscleId | string | SVG muscle ID (e.g. pecs, delts) |
+| frontWorked[].expiresAt | string | ISO 8601 UTC timestamp for color intensity |
+| backWorked | object[] | Muscle entries for back-view SVG (MuscleManBack) |
+| backWorked[].muscleId | string | SVG muscle ID (e.g. lats, delts) |
+| backWorked[].expiresAt | string | ISO 8601 UTC timestamp for color intensity |
 
 **Empty state:** `{ "frontWorked": [], "backWorked": [] }`
 
@@ -151,26 +160,29 @@ Movement `areaOfActivation` is a comma-separated string (e.g. `"Chest, Triceps, 
 
 1. **Movement (exercises table):** `id`, `name`, `area_of_activation` (e.g. `"Chest, Triceps, Delts"`)
 2. **POST:** Frontend sends `exerciseId` (Movement.id) + exercises array
-3. **Backend:** Looks up Movement by `exerciseId` → parses `areaOfActivation` → maps to canonical → stores in `worked_muscles`
-4. **GET:** Reads `worked_muscles` → maps canonical to muscle IDs → returns `frontWorked`, `backWorked`
+3. **Backend:** Looks up Movement by `exerciseId` → parses `areaOfActivation` → maps to canonical → upserts each muscle group with `expires_at = NOW() + 48 hours`
+4. **GET:** Reads non-expired rows from `worked_muscles` → maps canonical to muscle IDs → returns `frontWorked`, `backWorked`
 
 ---
 
 ## Database
 
-**Table:** `worked_muscles`
+**Table:** `worked_muscles` (per-muscle 48-hour expiry)
 
 | Column | Type | Notes |
 |--------|------|-------|
-| user_id | VARCHAR(255) | PK, FK to users(sub_id) |
-| muscle_groups | TEXT[] | Canonical names: Chest, Arms, Shoulders, etc. |
-| updated_at | TIMESTAMP | Last update |
+| id | BIGSERIAL | PK |
+| user_id | VARCHAR(255) | FK to users(sub_id) |
+| muscle_group | VARCHAR(100) | Canonical name (Chest, Triceps, etc.) |
+| expires_at | TIMESTAMP | When this muscle group expires |
+
+**Constraints:** `UNIQUE(user_id, muscle_group)` — one row per user per muscle group. Each workout refreshes `expires_at` for that muscle.
 
 ---
 
 ## Cache
 
-- **Key:** `workedMuscles:v2:{userId}` (v2 = fine-grained mapping, busts stale Arms data)
+- **Key:** `workedMuscles:v4:{userId}` (v4 = includes expiresAt per muscle)
 - **TTL:** 5 minutes (300 seconds)
 - **Bust:** On POST for that user
 

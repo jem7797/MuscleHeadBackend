@@ -1,21 +1,15 @@
 package com.MuscleHead.MuscleHead.WorkedMuscles;
 
-import java.time.Instant;
-import java.util.List;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
-import com.MuscleHead.MuscleHead.User.User;
 
 @Entity
 @Table(name = "worked_muscles")
@@ -24,17 +18,15 @@ import com.MuscleHead.MuscleHead.User.User;
 public class WorkedMuscles {
 
     @Id
-    @Column(name = "user_id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "user_id", nullable = false)
     private String userId;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
-    private User user;
+    @Column(name = "muscle_group", nullable = false, length = 100)
+    private String muscleGroup;
 
-    @Column(name = "muscle_groups")
-    @JdbcTypeCode(SqlTypes.ARRAY)
-    private List<String> muscleGroups;
-
-    @Column(name = "updated_at")
-    private Instant updatedAt;
+    @Column(name = "expires_at", nullable = false)
+    private LocalDateTime expiresAt;
 }
