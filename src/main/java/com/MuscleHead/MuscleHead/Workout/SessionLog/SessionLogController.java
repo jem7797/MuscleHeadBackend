@@ -54,11 +54,11 @@ public class SessionLogController {
                 });
 
         try {
-            SessionLog createdSessionLog = sessionLogService.createSessionLog(user, request);
+            CreateSessionLogResult result = sessionLogService.createSessionLog(user, request);
             logger.info("Successfully created session log with id: {} for user: {}",
-                    createdSessionLog.getId(), subId);
+                    result.getSessionLog().getId(), subId);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new SessionLogResponse(createdSessionLog.getId()));
+                    .body(new SessionLogResponse(result.getSessionLog().getId(), result.getNewlyAwardedMedals()));
         } catch (Exception ex) {
             logger.error("Error creating session log for user: {}", subId, ex);
             throw ex;

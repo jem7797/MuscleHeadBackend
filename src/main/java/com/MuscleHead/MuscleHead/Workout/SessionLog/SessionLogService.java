@@ -12,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.MuscleHead.MuscleHead.Medal.MedalResponse;
 import com.MuscleHead.MuscleHead.Medal.MedalService;
 import com.MuscleHead.MuscleHead.Movement.Movement;
 import com.MuscleHead.MuscleHead.Movement.MovementRepository;
@@ -53,7 +54,7 @@ public class SessionLogService {
     MedalService medalService;
 
     @Transactional
-    public SessionLog createSessionLog(User user, SessionLogRequest request) {
+    public CreateSessionLogResult createSessionLog(User user, SessionLogRequest request) {
         logger.debug("Creating new session log for user: {}", user != null ? user.getSub_id() : "null");
         
         if (user == null || user.getSub_id() == null) {
@@ -141,12 +142,12 @@ public class SessionLogService {
         user.setLifetime_gym_time(user.getLifetime_gym_time() + gymTime);
         userRepository.save(user);
         userService.levelUp(user);
-        medalService.checkAndAwardMedals(user, savedSessionLog);
+        List<MedalResponse> newlyAwarded = medalService.checkAndAwardMedals(user, savedSessionLog);
 
         logger.info("Session log created successfully with id: {} for user: {} with {} exercises",
                 savedSessionLog.getId(), savedSessionLog.getUser().getSub_id(), sessionInstances.size());
 
-        return savedSessionLog;
+        return new CreateSessionLogResult(savedSessionLog, newlyAwarded);
     }
 
     @Transactional

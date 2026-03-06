@@ -6,6 +6,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -58,150 +59,152 @@ public class MedalService {
 
     /**
      * Checks and awards medals after a workout is posted.
+     * @return list of newly awarded medals (for inclusion in the response)
      */
     @Transactional
-    public void checkAndAwardMedals(User user, SessionLog justSavedSessionLog) {
-        if (user == null || user.getSub_id() == null) return;
+    public List<MedalResponse> checkAndAwardMedals(User user, SessionLog justSavedSessionLog) {
+        List<MedalResponse> newlyAwarded = new ArrayList<>();
+        if (user == null || user.getSub_id() == null) return newlyAwarded;
         String subId = user.getSub_id();
 
         // BAPTISM - first workout
         if (sessionLogRepository.countByUser_SubId(subId) == 1) {
-            tryAward(user, MedalName.BAPTISM, "First workout completed!");
+            tryAward(user, MedalName.BAPTISM, "First workout completed!", newlyAwarded);
         }
 
         // NO_PAIN_NO_GAIN - 5 workouts
         if (sessionLogRepository.countByUser_SubId(subId) >= 5) {
-            tryAward(user, MedalName.NO_PAIN_NO_GAIN, "5 workouts completed!");
+            tryAward(user, MedalName.NO_PAIN_NO_GAIN, "5 workouts completed!", newlyAwarded);
         }
 
         // CALL_ME_CLOTH_THE_WAY_I_STAY_IRONED - 10 workouts
         if (sessionLogRepository.countByUser_SubId(subId) >= 10) {
-            tryAward(user, MedalName.CALL_ME_CLOTH_THE_WAY_I_STAY_IRONED, "10 workouts completed!");
+            tryAward(user, MedalName.CALL_ME_CLOTH_THE_WAY_I_STAY_IRONED, "10 workouts completed!", newlyAwarded);
         }
 
         // LIGHT_WEIGHT_BABY - first 225 lb lift
         if (user.getHighest_weight_lifted() >= 225) {
-            tryAward(user, MedalName.LIGHT_WEIGHT_BABY, "First 225 lb lift!");
+            tryAward(user, MedalName.LIGHT_WEIGHT_BABY, "First 225 lb lift!", newlyAwarded);
         }
 
         // VETERAN - 50 workouts
         if (sessionLogRepository.countByUser_SubId(subId) >= 50) {
-            tryAward(user, MedalName.VETERAN, "50 workouts logged!");
+            tryAward(user, MedalName.VETERAN, "50 workouts logged!", newlyAwarded);
         }
 
         // EVERYONE_WANTS_TO_BE_A_BODY_BUILDER - first 405 lbs
         if (user.getHighest_weight_lifted() >= 405) {
-            tryAward(user, MedalName.EVERYONE_WANTS_TO_BE_A_BODY_BUILDER, "First 405 lb lift!");
+            tryAward(user, MedalName.EVERYONE_WANTS_TO_BE_A_BODY_BUILDER, "First 405 lb lift!", newlyAwarded);
         }
 
         // BUT_NOBODY_WANNA_LIFT_THIS_HEAVY_WEIGHT - first 500 lbs
         if (user.getHighest_weight_lifted() >= 500) {
-            tryAward(user, MedalName.BUT_NOBODY_WANNA_LIFT_THIS_HEAVY_WEIGHT, "First 500 lb lift!");
+            tryAward(user, MedalName.BUT_NOBODY_WANNA_LIFT_THIS_HEAVY_WEIGHT, "First 500 lb lift!", newlyAwarded);
         }
 
         // MENTZER_FLOW - workout under 30 minutes
         if (justSavedSessionLog.getTimeSpentInGym() > 0 && justSavedSessionLog.getTimeSpentInGym() < 1800) {
-            tryAward(user, MedalName.MENTZER_FLOW, "Workout under 30 minutes!");
+            tryAward(user, MedalName.MENTZER_FLOW, "Workout under 30 minutes!", newlyAwarded);
         }
 
         // FREQUENT_FLIER - 25 workouts
         if (sessionLogRepository.countByUser_SubId(subId) >= 25) {
-            tryAward(user, MedalName.FREQUENT_FLIER, "25 workouts logged!");
+            tryAward(user, MedalName.FREQUENT_FLIER, "25 workouts logged!", newlyAwarded);
         }
 
         // YEA_I_WORK_HERE - 100 workouts
         if (sessionLogRepository.countByUser_SubId(subId) >= 100) {
-            tryAward(user, MedalName.YEA_I_WORK_HERE, "100 workouts logged!");
+            tryAward(user, MedalName.YEA_I_WORK_HERE, "100 workouts logged!", newlyAwarded);
         }
 
         // GYM_RAT - total gym time exceeds 24 hours (86400 seconds)
         if (user.getLifetime_gym_time() >= GYM_RAT_HOURS * 3600) {
-            tryAward(user, MedalName.GYM_RAT, "24+ hours in the gym!");
+            tryAward(user, MedalName.GYM_RAT, "24+ hours in the gym!", newlyAwarded);
         }
 
-        // ZHE_PUMP_IS_ZHE_BEST_FEELING - complete chest movement
-        if (sessionHasMovementArea(justSavedSessionLog, "chest")) {
-            tryAward(user, MedalName.ZHE_PUMP_IS_ZHE_BEST_FEELING, "Completed a chest movement!");
+        // ZHE_PUMP_IS_ZHE_BEST_FEELING - first chest movement (must be first time ever)
+        if (sessionHasMovementArea(justSavedSessionLog, "chest") && isFirstWorkoutWithArea(subId, justSavedSessionLog.getId(), "chest")) {
+            tryAward(user, MedalName.ZHE_PUMP_IS_ZHE_BEST_FEELING, "Completed a chest movement!", newlyAwarded);
         }
 
         // STICK_FIGURE - 5 consecutive workouts without legs
         if (hasConsecutiveWorkoutsWithoutLegs(subId, STICK_FIGURE_CONSECUTIVE)) {
-            tryAward(user, MedalName.STICK_FIGURE, "5 consecutive workouts without legs!");
+            tryAward(user, MedalName.STICK_FIGURE, "5 consecutive workouts without legs!", newlyAwarded);
         }
 
-        // UPSIDEDOWN_CHIP - first back workout
-        if (sessionHasMovementArea(justSavedSessionLog, "lats") || sessionHasMovementArea(justSavedSessionLog, "back")) {
-            tryAward(user, MedalName.UPSIDEDOWN_CHIP, "First back workout!");
+        // UPSIDEDOWN_CHIP - first back workout (must be first time ever)
+        if ((sessionHasMovementArea(justSavedSessionLog, "lats") || sessionHasMovementArea(justSavedSessionLog, "back"))
+                && isFirstWorkoutWithBack(subId, justSavedSessionLog.getId())) {
+            tryAward(user, MedalName.UPSIDEDOWN_CHIP, "First back workout!", newlyAwarded);
         }
 
         // AINT_NOTHING_BUT_A_PEANUT - first 335
         if (user.getHighest_weight_lifted() >= 335) {
-            tryAward(user, MedalName.AINT_NOTHING_BUT_A_PEANUT, "First 335 lb lift!");
+            tryAward(user, MedalName.AINT_NOTHING_BUT_A_PEANUT, "First 335 lb lift!", newlyAwarded);
         }
 
         // ONE_TIRED_SOB - workout 3+ hours
         if (justSavedSessionLog.getTimeSpentInGym() >= 10800) {
-            tryAward(user, MedalName.ONE_TIRED_SOB, "3+ hour workout!");
+            tryAward(user, MedalName.ONE_TIRED_SOB, "3+ hour workout!", newlyAwarded);
         }
 
         // NOT_A_CREATURE_WAS_STIRRING - workout before 5 am
         ZonedDateTime zdt = justSavedSessionLog.getDate().atZone(ZoneId.systemDefault());
         if (zdt.toLocalTime().isBefore(LocalTime.of(5, 0))) {
-            tryAward(user, MedalName.NOT_A_CREATURE_WAS_STIRRING, "Workout before 5 am!");
+            tryAward(user, MedalName.NOT_A_CREATURE_WAS_STIRRING, "Workout before 5 am!", newlyAwarded);
         }
 
         // THE_GYM_IS_MY_CHURCH - workout on Sunday
         if (zdt.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) {
-            tryAward(user, MedalName.THE_GYM_IS_MY_CHURCH, "Workout on Sunday!");
+            tryAward(user, MedalName.THE_GYM_IS_MY_CHURCH, "Workout on Sunday!", newlyAwarded);
         }
 
         // WEREWOLF - workout between 9pm and 11:59pm
         int hour = zdt.getHour();
         if (hour >= 21) {
-            tryAward(user, MedalName.WEREWOLF, "Late night workout (9pm-12am)!");
+            tryAward(user, MedalName.WEREWOLF, "Late night workout (9pm-12am)!", newlyAwarded);
         }
 
         // SAME_TIME_TOMORROW - same time 5 days in a row
         if (hasSameTimeStreak(subId, SAME_TIME_DAYS)) {
-            tryAward(user, MedalName.SAME_TIME_TOMORROW, "Same time 5 days in a row!");
+            tryAward(user, MedalName.SAME_TIME_TOMORROW, "Same time 5 days in a row!", newlyAwarded);
         }
 
         // PLATES_BEFORE_DATES - workout on Valentine's Day
         if (zdt.getMonthValue() == 2 && zdt.getDayOfMonth() == 14) {
-            tryAward(user, MedalName.PLATES_BEFORE_DATES, "Workout on Valentine's Day!");
+            tryAward(user, MedalName.PLATES_BEFORE_DATES, "Workout on Valentine's Day!", newlyAwarded);
         }
 
         // SIR_MAX_ALOT - 20+ total sets in workout
         int totalSets = getTotalSets(justSavedSessionLog);
         if (totalSets >= 20) {
-            tryAward(user, MedalName.SIR_MAX_ALOT, "20+ sets in one workout!");
+            tryAward(user, MedalName.SIR_MAX_ALOT, "20+ sets in one workout!", newlyAwarded);
         }
 
         // MUSCLE_IS_THE_BEST_GIFT - workout on Christmas
         if (zdt.getMonthValue() == 12 && zdt.getDayOfMonth() == 25) {
-            tryAward(user, MedalName.MUSCLE_IS_THE_BEST_GIFT, "Workout on Christmas!");
+            tryAward(user, MedalName.MUSCLE_IS_THE_BEST_GIFT, "Workout on Christmas!", newlyAwarded);
         }
 
         // IM_DRESSED_AS_AN_OLYMPIAN - workout on Halloween
         if (zdt.getMonthValue() == 10 && zdt.getDayOfMonth() == 31) {
-            tryAward(user, MedalName.IM_DRESSED_AS_AN_OLYMPIAN, "Workout on Halloween!");
+            tryAward(user, MedalName.IM_DRESSED_AS_AN_OLYMPIAN, "Workout on Halloween!", newlyAwarded);
         }
 
         // SAME_ANIMAL_DIFFERENT_BEAST - first 100 lbs
         if (user.getHighest_weight_lifted() >= 100) {
-            tryAward(user, MedalName.SAME_ANIMAL_DIFFERENT_BEAST, "First 100 lb lift!");
+            tryAward(user, MedalName.SAME_ANIMAL_DIFFERENT_BEAST, "First 100 lb lift!", newlyAwarded);
         }
 
         // ITS_ABOUT_HOW_YOU_USE_IT - workout max weight doesn't exceed 10
         Double sessionMax = justSavedSessionLog.getSession_highest_lift();
         if (sessionMax != null && sessionMax <= 10 && sessionMax > 0) {
-            tryAward(user, MedalName.ITS_ABOUT_HOW_YOU_USE_IT, "Workout with max weight ≤10 lbs!");
+            tryAward(user, MedalName.ITS_ABOUT_HOW_YOU_USE_IT, "Workout with max weight ≤10 lbs!", newlyAwarded);
         }
 
-        // UNICORN - log a leg movement
-        if (sessionHasMovementArea(justSavedSessionLog, "quads") || sessionHasMovementArea(justSavedSessionLog, "glutes")
-                || sessionHasMovementArea(justSavedSessionLog, "hamstrings") || sessionHasMovementArea(justSavedSessionLog, "calves")) {
-            tryAward(user, MedalName.UNICORN, "Completed a leg movement!");
+        // UNICORN - first leg movement (must be first time ever)
+        if (sessionHasLegMovement(justSavedSessionLog) && isFirstWorkoutWithArea(subId, justSavedSessionLog.getId(), "quads", "glutes", "hamstrings", "calves")) {
+            tryAward(user, MedalName.UNICORN, "Completed a leg movement!", newlyAwarded);
         }
 
         // GLUTTON_FOR_PUNISHMENT - 2 workouts in the same day
@@ -210,8 +213,9 @@ public class MedalService {
                 .filter(s -> s.getDate().atZone(ZoneId.systemDefault()).toLocalDate().equals(today))
                 .count();
         if (workoutsToday >= 2) {
-            tryAward(user, MedalName.GLUTTON_FOR_PUNISHMENT, "2 workouts in the same day!");
+            tryAward(user, MedalName.GLUTTON_FOR_PUNISHMENT, "2 workouts in the same day!", newlyAwarded);
         }
+        return newlyAwarded;
     }
 
     /**
@@ -313,6 +317,10 @@ public class MedalService {
     }
 
     private void tryAward(User user, MedalName medalName, String message) {
+        tryAward(user, medalName, message, null);
+    }
+
+    private void tryAward(User user, MedalName medalName, String message, List<MedalResponse> newlyAwarded) {
         if (userMedalRepository.existsByUserSubIdAndMedalName(user.getSub_id(), medalName)) return;
         UserMedal medal = new UserMedal();
         medal.setUser(user);
@@ -320,6 +328,9 @@ public class MedalService {
         userMedalRepository.save(medal);
         notificationService.createMedalNotification(user, medal, message);
         logger.info("Awarded medal {} to user {}", medalName, user.getSub_id());
+        if (newlyAwarded != null) {
+            newlyAwarded.add(toResponse(medal));
+        }
     }
 
     private boolean sessionHasMovementArea(SessionLog session, String area) {
@@ -373,6 +384,33 @@ public class MedalService {
     private boolean sessionHasLegMovement(SessionLog session) {
         return sessionHasMovementArea(session, "quads") || sessionHasMovementArea(session, "glutes")
                 || sessionHasMovementArea(session, "hamstrings") || sessionHasMovementArea(session, "calves");
+    }
+
+    /**
+     * True if this session is the earliest workout (by date) that has any of the given areas.
+     * Used for "first X" movement medals.
+     */
+    private boolean isFirstWorkoutWithArea(String subId, long currentSessionId, String... areas) {
+        List<SessionLog> all = sessionLogRepository.findByUser_SubId(subId).stream()
+                .sorted(Comparator.comparing(SessionLog::getDate))
+                .toList();
+        for (SessionLog s : all) {
+            boolean hasArea = false;
+            for (String area : areas) {
+                if (sessionHasMovementArea(s, area)) {
+                    hasArea = true;
+                    break;
+                }
+            }
+            if (hasArea) {
+                return s.getId() == currentSessionId;
+            }
+        }
+        return false;
+    }
+
+    private boolean isFirstWorkoutWithBack(String subId, long currentSessionId) {
+        return isFirstWorkoutWithArea(subId, currentSessionId, "lats", "back");
     }
 
     private boolean areConsecutiveDays(List<LocalDate> dates) {

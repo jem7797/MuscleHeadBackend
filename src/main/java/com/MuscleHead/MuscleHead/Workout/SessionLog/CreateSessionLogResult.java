@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class SessionLogResponse {
-    private long sessionId;
+public class CreateSessionLogResult {
+    private SessionLog sessionLog;
     private List<MedalResponse> newlyAwardedMedals;
 }
