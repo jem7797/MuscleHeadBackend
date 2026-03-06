@@ -97,6 +97,33 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles achievement not found when creating achievement post. Returns 404.
+     */
+    @ExceptionHandler(PostAchievementNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handlePostAchievementNotFound(PostAchievementNotFoundException ex) {
+        logger.warn("Achievement not found: {}", ex.getMessage());
+        return buildErrorResponse(ex.getMessage(), HttpStatus.NOT_FOUND, "Not Found");
+    }
+
+    /**
+     * Handles forbidden cases: user doesn't own achievement or userId doesn't match auth. Returns 403.
+     */
+    @ExceptionHandler(PostAchievementForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handlePostAchievementForbidden(PostAchievementForbiddenException ex) {
+        logger.warn("Achievement post forbidden: {}", ex.getMessage());
+        return buildErrorResponse(ex.getMessage(), HttpStatus.FORBIDDEN, "Forbidden");
+    }
+
+    /**
+     * Handles conflict when user has already posted this achievement. Returns 409.
+     */
+    @ExceptionHandler(PostAchievementConflictException.class)
+    public ResponseEntity<Map<String, Object>> handlePostAchievementConflict(PostAchievementConflictException ex) {
+        logger.warn("Achievement already posted: {}", ex.getMessage());
+        return buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT, "Conflict");
+    }
+
+    /**
      * Handles under-age signup attempts. Returns 403 Forbidden.
      */
     @ExceptionHandler(UnderAgeException.class)
@@ -109,6 +136,16 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", ex.getMessage());
         errorResponse.put("path", "N/A");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+    }
+
+    private ResponseEntity<Map<String, Object>> buildErrorResponse(String message, HttpStatus status, String error) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", status.value());
+        body.put("error", error);
+        body.put("message", message);
+        body.put("path", "N/A");
+        return ResponseEntity.status(status).body(body);
     }
 
     /**

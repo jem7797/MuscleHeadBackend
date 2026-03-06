@@ -11,6 +11,11 @@ import org.springframework.stereotype.Service;
 
 import com.MuscleHead.MuscleHead.Follow.FollowRepository;
 import com.MuscleHead.MuscleHead.Medal.MedalService;
+import com.MuscleHead.MuscleHead.Medal.UserMedal;
+import com.MuscleHead.MuscleHead.Medal.UserMedalRepository;
+import com.MuscleHead.MuscleHead.exception.PostAchievementConflictException;
+import com.MuscleHead.MuscleHead.exception.PostAchievementForbiddenException;
+import com.MuscleHead.MuscleHead.exception.PostAchievementNotFoundException;
 import com.MuscleHead.MuscleHead.Notification.NotificationService;
 import com.MuscleHead.MuscleHead.Notification.NotificationType;
 import com.MuscleHead.MuscleHead.Post.Comment.Comment;
@@ -37,6 +42,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final UserMedalRepository userMedalRepository;
     private final FollowRepository followRepository;
     private final LikeRepository likeRepository;
     private final NotificationService notificationService;
@@ -49,6 +55,7 @@ public class PostService {
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
+                       UserMedalRepository userMedalRepository,
                        FollowRepository followRepository,
                        LikeRepository likeRepository,
                        NotificationService notificationService,
@@ -60,6 +67,7 @@ public class PostService {
                        @Value("${following.cache.ttl-seconds:900}") int followingCacheTtlSeconds) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.userMedalRepository = userMedalRepository;
         this.followRepository = followRepository;
         this.likeRepository = likeRepository;
         this.notificationService = notificationService;
@@ -91,8 +99,8 @@ public class PostService {
             return resp;
         }
 
-        // 2. Hit DB
-        Post post = postRepository.findById(postId)
+        // 2. Hit DB (fetch achievement for trophy posts)
+        Post post = postRepository.findByIdWithAchievement(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found: " + postId));
 
         PostResponse response = PostResponse.from(post);
@@ -112,15 +120,33 @@ public class PostService {
 
     /**
      * Create a post: save to DB and cache.
+     * Supports achievement posts when isTrophy=true and achievementId is provided.
      */
     @Transactional
     public PostResponse createPost(User user, PostRequest request) {
+        boolean isTrophy = Boolean.TRUE.equals(request.getIsTrophy());
+        Long achievementId = request.getAchievementId();
+
+        if (isTrophy && achievementId != null) {
+            validateAchievementPost(user.getSub_id(), achievementId);
+        }
+
         Post post = new Post();
         post.setUser(user);
         post.setImageLink(request.getImageLink());
         post.setCaption(request.getCaption() != null ? request.getCaption() : "");
+        post.setTrophy(isTrophy);
+        post.setAchievementId(isTrophy ? achievementId : null);
 
-        Post saved = postRepository.save(post);
+        Post saved;
+        try {
+            saved = postRepository.save(post);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            if (e.getMessage() != null && e.getMessage().contains("unique_user_achievement")) {
+                throw new PostAchievementConflictException("Already posted this achievement");
+            }
+            throw e;
+        }
 
         user.setNumber_of_posts(user.getNumber_of_posts() + 1);
         userRepository.save(user);
@@ -133,7 +159,8 @@ public class PostService {
         boolean hasImage = request.getImageLink() != null && !request.getImageLink().isBlank();
         medalService.checkPostMedals(user, hasImage);
 
-        PostResponse response = PostResponse.from(saved);
+        Post postWithAchievement = postRepository.findByIdWithAchievement(saved.getPostId()).orElse(saved);
+        PostResponse response = PostResponse.from(postWithAchievement);
         cachePostResponse(response);
         enrichWithImageUrl(response);
         logger.info("Post {} created and cached", saved.getPostId());
@@ -199,7 +226,8 @@ public class PostService {
         }
 
         if (!changed) {
-            return PostResponse.from(post);
+            Post postWithAchievement = postRepository.findByIdWithAchievement(postId).orElse(post);
+            return PostResponse.from(postWithAchievement);
         }
 
         Post saved = postRepository.save(post);
@@ -209,11 +237,28 @@ public class PostService {
         if (request.getComment() != null && !request.getComment().isBlank()) {
             medalService.checkCommentMedals(requester);
         }
-        PostResponse response = PostResponse.from(saved);
+        Post postWithAchievement = postRepository.findByIdWithAchievement(postId).orElse(saved);
+        PostResponse response = PostResponse.from(postWithAchievement);
         cachePostResponse(response);
         enrichWithImageUrl(response);
         logger.info("Post {} patched (like={}, comment={})", postId, request.getLike(), request.getComment() != null);
         return response;
+    }
+
+    /**
+     * Validates achievement post: achievement exists, user owns it, not already posted.
+     */
+    private void validateAchievementPost(String userSubId, Long achievementId) {
+        UserMedal achievement = userMedalRepository.findById(achievementId)
+                .orElseThrow(() -> new PostAchievementNotFoundException("Achievement not found: " + achievementId));
+
+        if (achievement.getUser() == null || !userSubId.equals(achievement.getUser().getSub_id())) {
+            throw new PostAchievementForbiddenException("User does not own this achievement");
+        }
+
+        if (postRepository.existsByUserSubIdAndAchievementId(userSubId, achievementId)) {
+            throw new PostAchievementConflictException("Already posted this achievement");
+        }
     }
 
     /**

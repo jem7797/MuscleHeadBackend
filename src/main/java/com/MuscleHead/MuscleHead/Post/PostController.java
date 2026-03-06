@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
 import com.MuscleHead.MuscleHead.config.SecurityUtils;
+import com.MuscleHead.MuscleHead.exception.PostAchievementForbiddenException;
 import com.MuscleHead.MuscleHead.s3.S3Service;
 
 import jakarta.validation.Valid;
@@ -79,12 +80,28 @@ public class PostController {
 
     @PostMapping
     public ResponseEntity<PostResponse> createPost(@Valid @RequestBody PostRequest request) {
-        String subId = SecurityUtils.getCurrentUserSub();
-        if (subId == null) {
+        String authSubId = SecurityUtils.getCurrentUserSub();
+        if (authSubId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        User user = userRepository.findById(subId)
-                .orElseThrow(() -> new RuntimeException("User not found: " + subId));
+
+        boolean isAchievementPost = Boolean.TRUE.equals(request.getIsTrophy()) && request.getAchievementId() != null;
+        final String userId;
+        if (isAchievementPost) {
+            String requestedUserId = request.getUserId();
+            if (requestedUserId == null || requestedUserId.isBlank()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+            if (!authSubId.equals(requestedUserId)) {
+                throw new PostAchievementForbiddenException("userId does not match authenticated user");
+            }
+            userId = requestedUserId;
+        } else {
+            userId = authSubId;
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
         PostResponse created = postService.createPost(user, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }

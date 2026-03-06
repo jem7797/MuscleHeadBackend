@@ -16,9 +16,14 @@ import java.util.stream.Collectors;
 public class PostResponse {
 
     private Long postId;
+    private String userId;
     private UserSummary user;
     private String imageLink;
     private String caption;
+    private boolean isTrophy;
+    private Long achievementId;
+    private String medalName;
+    private String description;
     private double score;
     private String timestamp;
     private int likeCount;
@@ -32,11 +37,24 @@ public class PostResponse {
                         .map(CommentSummary::from)
                         .collect(Collectors.toList())
                 : List.of();
+        String userId = post.getUser() != null ? post.getUser().getSub_id() : null;
+        String medalName = null;
+        String description = null;
+        if (post.isTrophy() && post.getAchievement() != null && post.getAchievement().getMedalName() != null) {
+            var mn = post.getAchievement().getMedalName();
+            medalName = mn.name();
+            description = mn.getDescription();
+        }
         return new PostResponse(
                 post.getPostId(),
+                userId,
                 UserSummary.from(post.getUser()),
                 post.getImageLink(),
                 post.getCaption(),
+                post.isTrophy(),
+                post.getAchievementId(),
+                medalName,
+                description,
                 post.getScore(),
                 post.getTimestamp(),
                 post.getLikeCount(),

@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.MuscleHead.MuscleHead.Medal.UserMedal;
 import com.MuscleHead.MuscleHead.Post.Comment.Comment;
 import com.MuscleHead.MuscleHead.User.User;
 
@@ -55,6 +56,19 @@ public class Post {
 
     @Min(value = 0, message = "Comment count cannot be negative")
     private int commentCount = 0;
+
+    /** True for achievement/trophy posts; false for regular posts. */
+    @Column(name = "is_trophy", nullable = false)
+    private boolean isTrophy = false;
+
+    /** FK to user_medals.id; null for regular posts. */
+    @Column(name = "achievement_id")
+    private Long achievementId;
+
+    /** Joined for achievement name; read-only, persistence uses achievementId. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "achievement_id", referencedColumnName = "id", insertable = false, updatable = false)
+    private UserMedal achievement;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Comment> comments = new ArrayList<>();
