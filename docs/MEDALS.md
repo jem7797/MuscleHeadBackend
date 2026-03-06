@@ -8,13 +8,14 @@ This document describes the achievements (medals) system in the MuscleHead backe
 
 Medals are awarded to users when they meet specific criteria. Each medal is stored in the `user_medals` table and triggers a `MEDAL_EARNED` notification. Medals are only awarded once per user (duplicates are prevented by `UserMedalRepository.existsByUserSubIdAndMedalName`).
 
-### API Endpoint
+### API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/medal/api/` | Returns all medals for the authenticated user, ordered by awardedAt descending |
+| `GET` | `/medal/api/` | Returns only medals the user has earned, ordered by awardedAt descending |
+| `GET` | `/medal/api/all` | Returns the full catalog of all medals with `earned` status for the authenticated user |
 
-**Example response:**
+**GET /medal/api/ response (earned only):**
 ```json
 [
   {
@@ -31,6 +32,31 @@ Medals are awarded to users when they meet specific criteria. Each medal is stor
   }
 ]
 ```
+
+**GET /medal/api/all response (full catalog with earned status):**
+```json
+[
+  {
+    "medalName": "BAPTISM",
+    "description": "Complete your first workout",
+    "earned": true,
+    "awardedAt": "2026-02-26T19:32:10Z"
+  },
+  {
+    "medalName": "LIGHT_WEIGHT_BABY",
+    "description": "First 225 lb lift",
+    "earned": false,
+    "awardedAt": null
+  }
+]
+```
+
+| Field | Type | Notes |
+|-------|------|-------|
+| medalName | string | Enum name (e.g. BAPTISM) |
+| description | string | How to earn the medal |
+| earned | boolean | true if the user has already earned it |
+| awardedAt | string \| null | ISO 8601 UTC when earned; null if not earned |
 
 ---
 

@@ -32,4 +32,18 @@ public class MedalController {
         logger.debug("Returning {} medals for user {}", medals.size(), subId);
         return ResponseEntity.ok(medals);
     }
+
+    /**
+     * Returns the full catalog of all medals with earned status for the authenticated user.
+     * Each item includes medalName, description, earned (true if user has it), and awardedAt (ISO 8601 UTC when earned).
+     */
+    @GetMapping("all")
+    public ResponseEntity<List<MedalCatalogItem>> getAllMedals() {
+        String subId = SecurityUtils.getCurrentUserSub();
+        if (subId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<MedalCatalogItem> catalog = medalService.getAllMedalsForUser(subId);
+        return ResponseEntity.ok(catalog);
+    }
 }

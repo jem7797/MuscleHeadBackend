@@ -4,14 +4,14 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.time.ZonedDateTime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -306,6 +306,29 @@ public class MedalService {
         return userMedalRepository.findByUserSubIdOrderByAwardedAtDesc(subId).stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    /**
+     * Returns the full catalog of all medals with earned status for the authenticated user.
+     * Each item includes medalName, description, earned (true if user has it), and awardedAt (ISO 8601 UTC when earned).
+     */
+    public List<MedalCatalogItem> getAllMedalsForUser(String subId) {
+        if (subId == null || subId.isBlank()) {
+            return List.of();
+        }
+        Map<MedalName, UserMedal> earnedByMedal = userMedalRepository.findByUserSubIdOrderByAwardedAtDesc(subId).stream()
+                .collect(Collectors.toMap(UserMedal::getMedalName, m -> m, (a, b) -> a));
+
+        List<MedalCatalogItem> result = new ArrayList<>();
+        for (MedalName name : MedalName.values()) {
+            UserMedal userMedal = earnedByMedal.get(name);
+            boolean earned = userMedal != null;
+            String awardedAt = (userMedal != null && userMedal.getAwardedAt() != null)
+                    ? userMedal.getAwardedAt().toString()
+                    : null;
+            result.add(new MedalCatalogItem(name, name.getDescription(), earned, awardedAt));
+        }
+        return result;
     }
 
     private MedalResponse toResponse(UserMedal m) {
