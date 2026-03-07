@@ -17,12 +17,14 @@ public class UserSummary {
     private String subId;
     private String username;
     private String profilePicUrl;
+    private String gender;
 
     public static UserSummary from(User user) {
         if (user == null) return null;
         return new UserSummary(
                 user.getSub_id(),
                 user.getUsername(),
-                user.getProfilePicUrl());
+                user.getProfilePicUrl(),
+                user.getGender());
     }
 }

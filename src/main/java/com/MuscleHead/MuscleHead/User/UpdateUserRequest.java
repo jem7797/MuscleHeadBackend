@@ -27,6 +27,7 @@ public class UpdateUserRequest {
     private String profilePicUrl;
     private Boolean nattyStatus;
     private String bio;
+    private String gender;
     private Map<String, String> workoutSchedule;
     private List<String> nemesisSubIds;
 }

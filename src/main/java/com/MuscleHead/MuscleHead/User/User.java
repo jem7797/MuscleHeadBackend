@@ -122,6 +122,9 @@ public class User {
     /** Optional. Null when not set. */
     private String bio;
 
+    /** Optional. e.g. "female", "male", "non-binary". Null when not set. */
+    private String gender;
+
     @JsonIgnore
     @OneToMany(fetch = jakarta.persistence.FetchType.EAGER)
     private List<User> nemesis;

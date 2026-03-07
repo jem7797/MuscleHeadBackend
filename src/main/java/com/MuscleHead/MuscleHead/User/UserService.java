@@ -178,6 +178,9 @@ public class UserService {
                     if (request.getBio() != null) {
                         existingUser.setBio(request.getBio());
                     }
+                    if (request.getGender() != null) {
+                        existingUser.setGender(request.getGender());
+                    }
                     if (request.getWorkoutSchedule() != null) {
                         existingUser.setWorkoutSchedule(new HashMap<>(request.getWorkoutSchedule()));
                     }
@@ -234,6 +237,7 @@ public class UserService {
                     existingUser.setNumber_following(updatedUser.getNumber_following());
                     existingUser.setProfilePicUrl(updatedUser.getProfilePicUrl());
                     existingUser.setBio(updatedUser.getBio());
+                    existingUser.setGender(updatedUser.getGender());
                     existingUser.setXP(updatedUser.getXP());
                     if (updatedUser.getWorkoutSchedule() != null) {
                         existingUser.setWorkoutSchedule(new HashMap<>(updatedUser.getWorkoutSchedule()));
