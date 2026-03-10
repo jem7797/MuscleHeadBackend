@@ -82,4 +82,11 @@ public class FollowController {
             @RequestParam String followee) {
         return ResponseEntity.ok(followService.isFollowing(follower, followee));
     }
+
+    @GetMapping("mutual")
+    public ResponseEntity<Boolean> areMutualFollowers(
+            @RequestParam String user1,
+            @RequestParam String user2) {
+        return ResponseEntity.ok(followService.areMutualFollowers(user1, user2));
+    }
 }

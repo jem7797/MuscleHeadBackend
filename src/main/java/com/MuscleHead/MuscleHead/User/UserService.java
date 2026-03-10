@@ -3,6 +3,7 @@ package com.MuscleHead.MuscleHead.User;
 import com.MuscleHead.MuscleHead.Notification.NotificationService;
 import com.MuscleHead.MuscleHead.Notification.NotificationType;
 import com.MuscleHead.MuscleHead.Rank.RankRepository;
+import com.MuscleHead.MuscleHead.cache.RedisService;
 import com.MuscleHead.MuscleHead.exception.UnderAgeException;
 
 import java.time.LocalDate;
@@ -17,7 +18,11 @@ import org.springframework.data.domain.Pageable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.transaction.Transactional;
 
@@ -25,6 +30,7 @@ import jakarta.transaction.Transactional;
 public class UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private static final String USER_CACHE_PREFIX = "user:";
 
     @Autowired
     private UserRepository userRepository;
@@ -37,6 +43,15 @@ public class UserService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Value("${user.cache.ttl-seconds:3600}")
+    private int userCacheTtlSeconds;
 
     private static final int MINIMUM_AGE = 13;
 
@@ -171,6 +186,7 @@ public class UserService {
                     }
                     if (request.getProfilePicUrl() != null) {
                         existingUser.setProfilePicUrl(request.getProfilePicUrl());
+                        existingUser.setProfilePicVersion(System.currentTimeMillis());
                     }
                     if (request.getNattyStatus() != null) {
                         existingUser.setNattyStatus(request.getNattyStatus());
@@ -195,6 +211,7 @@ public class UserService {
                     }
 
                     User savedUser = userRepository.save(existingUser);
+                    invalidateUserCache(savedUser.getSub_id());
                     logger.info("User partially updated successfully with sub_id: {}", savedUser.getSub_id());
                     return savedUser;
                 });
@@ -235,7 +252,10 @@ public class UserService {
                     existingUser.setLifetime_gym_time(updatedUser.getLifetime_gym_time());
                     existingUser.setNumber_of_followers(updatedUser.getNumber_of_followers());
                     existingUser.setNumber_following(updatedUser.getNumber_following());
-                    existingUser.setProfilePicUrl(updatedUser.getProfilePicUrl());
+                    if (updatedUser.getProfilePicUrl() != null) {
+                        existingUser.setProfilePicUrl(updatedUser.getProfilePicUrl());
+                        existingUser.setProfilePicVersion(System.currentTimeMillis());
+                    }
                     existingUser.setBio(updatedUser.getBio());
                     existingUser.setGender(updatedUser.getGender());
                     existingUser.setXP(updatedUser.getXP());
@@ -244,6 +264,7 @@ public class UserService {
                     }
 
                     User savedUser = userRepository.save(existingUser);
+                    invalidateUserCache(savedUser.getSub_id());
                     logger.info("User updated successfully with sub_id: {}", savedUser.getSub_id());
                     return savedUser;
                 });
@@ -273,6 +294,7 @@ public class UserService {
             return false;
         }
         userRepository.deleteById(subId);
+        invalidateUserCache(subId);
         logger.info("User deleted successfully with sub_id: {}", subId);
         return true;
     }
@@ -292,6 +314,7 @@ public class UserService {
                     boolean removed = user.getNemesis().removeIf(n -> nemesisSubId.equals(n.getSub_id()));
                     if (removed) {
                         userRepository.save(user);
+                        invalidateUserCache(userSubId);
                         logger.info("User {} removed nemesis {}", userSubId, nemesisSubId);
                     }
                     return removed;
@@ -307,7 +330,11 @@ public class UserService {
             throw new IllegalArgumentException("Username must not be blank");
         }
         return userRepository.findByUsername(username)
-                .map(this::ensureUserHasRank);
+                .map(user -> {
+                    User ensured = ensureUserHasRank(user);
+                    cacheUser(ensured);
+                    return ensured;
+                });
     }
 
     /**
@@ -331,8 +358,42 @@ public class UserService {
             logger.error("Attempted to get user with null or blank sub_id");
             throw new IllegalArgumentException("User id must not be blank");
         }
+
+        String cacheKey = USER_CACHE_PREFIX + subId;
+        String cached = redisService.get(cacheKey);
+        if (cached != null && !cached.isBlank()) {
+            try {
+                User user = objectMapper.readValue(cached, User.class);
+                logger.debug("User {} served from cache", subId);
+                return Optional.of(user);
+            } catch (JsonProcessingException e) {
+                logger.warn("Failed to parse cached user {}: {}", subId, e.getMessage());
+            }
+        }
+
         return userRepository.findById(subId)
-                .map(this::ensureUserHasRank);
+                .map(user -> {
+                    User ensured = ensureUserHasRank(user);
+                    cacheUser(ensured);
+                    return ensured;
+                });
+    }
+
+    private void cacheUser(User user) {
+        if (user == null || user.getSub_id() == null) return;
+        try {
+            String json = objectMapper.writeValueAsString(user);
+            redisService.setWithTtl(USER_CACHE_PREFIX + user.getSub_id(), json, userCacheTtlSeconds);
+            logger.debug("User {} cached", user.getSub_id());
+        } catch (JsonProcessingException e) {
+            logger.warn("Failed to cache user {}: {}", user.getSub_id(), e.getMessage());
+        }
+    }
+
+    private void invalidateUserCache(String subId) {
+        if (subId == null || subId.isBlank()) return;
+        redisService.delete(USER_CACHE_PREFIX + subId);
+        logger.debug("Invalidated user cache for {}", subId);
     }
 
     /**
@@ -383,6 +444,7 @@ public class UserService {
                     boolean actuallyLeveledUp = user.getRank() == null || user.getRank().getLevel() != rankLevel;
                     user.setRank(rank);
                     userRepository.save(user);
+                    invalidateUserCache(user.getSub_id());
                     logger.info("User {} leveled up to rank level {} ({})", user.getSub_id(), rankLevel,
                             rank.getName());
                     if (actuallyLeveledUp && rankLevel > 0) {

@@ -115,6 +115,15 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles forbidden live session actions (e.g. only host can end). Returns 403.
+     */
+    @ExceptionHandler(LiveSessionForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handleLiveSessionForbidden(LiveSessionForbiddenException ex) {
+        logger.warn("Live session forbidden: {}", ex.getMessage());
+        return buildErrorResponse(ex.getMessage(), HttpStatus.FORBIDDEN, "Forbidden");
+    }
+
+    /**
      * Handles conflict when user has already posted this achievement. Returns 409.
      */
     @ExceptionHandler(PostAchievementConflictException.class)

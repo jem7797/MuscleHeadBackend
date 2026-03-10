@@ -12,7 +12,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "worked_muscles")
+@Table(name = "worked_muscles", uniqueConstraints = {
+    @jakarta.persistence.UniqueConstraint(columnNames = {"user_id", "muscle_group"})
+})
 @Data
 @NoArgsConstructor
 public class WorkedMuscles {

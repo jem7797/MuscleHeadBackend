@@ -10,8 +10,10 @@ import org.springframework.stereotype.Service;
 
 import com.MuscleHead.MuscleHead.Medal.MedalService;
 import com.MuscleHead.MuscleHead.Notification.NotificationService;
+import com.MuscleHead.MuscleHead.Post.PostService;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
+import com.MuscleHead.MuscleHead.cache.RedisService;
 
 import jakarta.transaction.Transactional;
 
@@ -19,6 +21,7 @@ import jakarta.transaction.Transactional;
 public class FollowService {
 
     private static final Logger logger = LoggerFactory.getLogger(FollowService.class);
+    private static final String FOLLOWING_CACHE_PREFIX = "following:";
 
     @Autowired
     private FollowRepository followRepository;
@@ -31,6 +34,12 @@ public class FollowService {
 
     @Autowired
     private MedalService medalService;
+
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private PostService postService;
 
     @Transactional
     public void follow(String followerSubId, String followeeSubId) {
@@ -64,6 +73,9 @@ public class FollowService {
         notificationService.createFollowNotification(followee, follower);
         medalService.checkFollowerMedals(followee);
 
+        redisService.delete(FOLLOWING_CACHE_PREFIX + followerSubId);
+        postService.invalidateFeedCacheForUser(followerSubId);
+
         logger.info("User {} followed user {}", followerSubId, followeeSubId);
     }
 
@@ -88,6 +100,9 @@ public class FollowService {
         followee.setNumber_of_followers(Math.max(0, followee.getNumber_of_followers() - 1));
         userRepository.save(follower);
         userRepository.save(followee);
+
+        redisService.delete(FOLLOWING_CACHE_PREFIX + followerSubId);
+        postService.invalidateFeedCacheForUser(followerSubId);
 
         logger.info("User {} unfollowed user {}", followerSubId, followeeSubId);
     }
@@ -114,5 +129,15 @@ public class FollowService {
                 .flatMap(follower -> userRepository.findById(followeeSubId)
                         .map(followee -> followRepository.existsByFollowerAndFollowee(follower, followee)))
                 .orElse(false);
+    }
+
+    /**
+     * Returns true if both users follow each other (mutual follow).
+     */
+    public boolean areMutualFollowers(String user1SubId, String user2SubId) {
+        if (user1SubId == null || user2SubId == null || user1SubId.equals(user2SubId)) {
+            return false;
+        }
+        return isFollowing(user1SubId, user2SubId) && isFollowing(user2SubId, user1SubId);
     }
 }

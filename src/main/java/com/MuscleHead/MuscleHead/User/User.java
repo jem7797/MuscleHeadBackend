@@ -17,6 +17,7 @@ import com.MuscleHead.MuscleHead.validation.ValidBirthYear;
 import com.MuscleHead.MuscleHead.Follow.UserSummary;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -91,6 +92,12 @@ public class User {
 
     private String profilePicUrl;
 
+    /**
+     * Cache-busting version for profile pic. Incremented when profilePicUrl changes.
+     * Frontend appends ?v={profilePicVersion} to image URL to bypass CloudFront/browser cache.
+     */
+    private Long profilePicVersion;
+
     @PositiveOrZero(message = "XP cannot be negative")
     private int XP = 0;
 
@@ -152,6 +159,28 @@ public class User {
         if (nemesis == null)
             return Collections.emptyList();
         return nemesis.stream().map(UserSummary::from).collect(Collectors.toList());
+    }
+
+    /**
+     * For JSON deserialization from cache. Accepts nemesis as UserSummary list.
+     */
+    @JsonSetter("nemesis")
+    private void setNemesisFromJson(List<UserSummary> summaries) {
+        if (summaries == null) {
+            this.nemesis = Collections.emptyList();
+            return;
+        }
+        this.nemesis = summaries.stream()
+                .map(s -> {
+                    User u = new User();
+                    u.setSub_id(s.getSubId());
+                    u.setUsername(s.getUsername());
+                    u.setProfilePicUrl(s.getProfilePicUrl());
+                    u.setProfilePicVersion(s.getProfilePicVersion());
+                    u.setGender(s.getGender());
+                    return u;
+                })
+                .collect(Collectors.toList());
     }
 
     @ElementCollection

@@ -39,6 +39,7 @@ public class PostService {
     private static final Logger logger = LoggerFactory.getLogger(PostService.class);
     private static final String POST_CACHE_PREFIX = "post:";
     private static final String FOLLOWING_CACHE_PREFIX = "following:";
+    private static final String FEED_CACHE_PREFIX = "feed:";
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
@@ -52,6 +53,7 @@ public class PostService {
     private final ObjectMapper objectMapper;
     private final int cacheTtlSeconds;
     private final int followingCacheTtlSeconds;
+    private final int feedCacheTtlSeconds;
 
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
@@ -64,7 +66,8 @@ public class PostService {
                        S3Service s3Service,
                        ObjectMapper objectMapper,
                        @Value("${post.cache.ttl-seconds:3600}") int cacheTtlSeconds,
-                       @Value("${following.cache.ttl-seconds:900}") int followingCacheTtlSeconds) {
+                       @Value("${following.cache.ttl-seconds:900}") int followingCacheTtlSeconds,
+                       @Value("${feed.cache.ttl-seconds:3600}") int feedCacheTtlSeconds) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.userMedalRepository = userMedalRepository;
@@ -77,6 +80,7 @@ public class PostService {
         this.objectMapper = objectMapper;
         this.cacheTtlSeconds = cacheTtlSeconds;
         this.followingCacheTtlSeconds = followingCacheTtlSeconds;
+        this.feedCacheTtlSeconds = feedCacheTtlSeconds;
     }
 
     /**
@@ -162,6 +166,7 @@ public class PostService {
         Post postWithAchievement = postRepository.findByIdWithAchievement(saved.getPostId()).orElse(saved);
         PostResponse response = PostResponse.from(postWithAchievement);
         cachePostResponse(response);
+        invalidateFeedCacheForUser(user.getSub_id());
         enrichWithImageUrl(response);
         logger.info("Post {} created and cached", saved.getPostId());
         return response;
@@ -290,9 +295,26 @@ public class PostService {
 
     /**
      * Get feed: posts from users the current user follows, plus their own posts.
+     * Cached per viewer with 1 hour TTL.
      */
     @Transactional(readOnly = true)
     public Page<PostResponse> getFeedForUser(String followerSubId, Pageable pageable) {
+        String sortKey = pageable.getSort().toString().replace(" ", "").replace(":", "");
+        String cacheKey = FEED_CACHE_PREFIX + followerSubId + ":" + pageable.getPageNumber() + ":" + pageable.getPageSize() + ":" + sortKey;
+
+        String cached = redisService.get(cacheKey);
+        if (cached != null && !cached.isBlank()) {
+            try {
+                FeedPageCache cache = objectMapper.readValue(cached, FeedPageCache.class);
+                Page<PostResponse> page = cache.toPage(pageable);
+                page.forEach(this::enrichWithImageUrl);
+                logger.debug("Feed for {} served from cache (page {})", followerSubId, pageable.getPageNumber());
+                return page;
+            } catch (JsonProcessingException e) {
+                logger.warn("Failed to parse cached feed for {}: {}", followerSubId, e.getMessage());
+            }
+        }
+
         List<String> followedSubIds = getFollowedSubIds(followerSubId);
         if (!followedSubIds.contains(followerSubId)) {
             followedSubIds = new java.util.ArrayList<>(followedSubIds);
@@ -301,7 +323,26 @@ public class PostService {
         Page<Post> posts = postRepository.findByUserSubIdIn(followedSubIds, pageable);
         Page<PostResponse> page = posts.map(PostResponse::from);
         page.forEach(this::enrichWithImageUrl);
+
+        try {
+            FeedPageCache cache = FeedPageCache.from(page);
+            String json = objectMapper.writeValueAsString(cache);
+            redisService.setWithTtl(cacheKey, json, feedCacheTtlSeconds);
+            logger.debug("Feed for {} cached (page {})", followerSubId, pageable.getPageNumber());
+        } catch (JsonProcessingException e) {
+            logger.warn("Failed to cache feed for {}: {}", followerSubId, e.getMessage());
+        }
+
         return page;
+    }
+
+    /**
+     * Invalidates all feed cache entries for a user (e.g. after creating a post or follow/unfollow).
+     */
+    public void invalidateFeedCacheForUser(String subId) {
+        if (subId == null || subId.isBlank()) return;
+        redisService.deleteKeysByPattern(FEED_CACHE_PREFIX + subId + ":*");
+        logger.debug("Invalidated feed cache for user {}", subId);
     }
 
     /**
