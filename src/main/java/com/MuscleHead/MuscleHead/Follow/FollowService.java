@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.MuscleHead.MuscleHead.Medal.MedalService;
@@ -22,9 +23,13 @@ public class FollowService {
 
     private static final Logger logger = LoggerFactory.getLogger(FollowService.class);
     private static final String FOLLOWING_CACHE_PREFIX = "following:";
+    private static final String MUTUAL_CACHE_PREFIX = "mutual:";
 
     @Autowired
     private FollowRepository followRepository;
+
+    @Value("${mutual-followers.cache.ttl-seconds:900}")
+    private int mutualCacheTtlSeconds;
 
     @Autowired
     private UserRepository userRepository;
@@ -75,6 +80,8 @@ public class FollowService {
 
         redisService.delete(FOLLOWING_CACHE_PREFIX + followerSubId);
         postService.invalidateFeedCacheForUser(followerSubId);
+        invalidateMutualCacheForUser(followerSubId);
+        invalidateMutualCacheForUser(followeeSubId);
 
         logger.info("User {} followed user {}", followerSubId, followeeSubId);
     }
@@ -103,6 +110,8 @@ public class FollowService {
 
         redisService.delete(FOLLOWING_CACHE_PREFIX + followerSubId);
         postService.invalidateFeedCacheForUser(followerSubId);
+        invalidateMutualCacheForUser(followerSubId);
+        invalidateMutualCacheForUser(followeeSubId);
 
         logger.info("User {} unfollowed user {}", followerSubId, followeeSubId);
     }
@@ -133,11 +142,30 @@ public class FollowService {
 
     /**
      * Returns true if both users follow each other (mutual follow).
+     * Cached for mutualCacheTtlSeconds; invalidated on follow/unfollow.
      */
     public boolean areMutualFollowers(String user1SubId, String user2SubId) {
         if (user1SubId == null || user2SubId == null || user1SubId.equals(user2SubId)) {
             return false;
         }
-        return isFollowing(user1SubId, user2SubId) && isFollowing(user2SubId, user1SubId);
+        String cacheKey = buildMutualCacheKey(user1SubId, user2SubId);
+        String cached = redisService.get(cacheKey);
+        if (cached != null) {
+            return "true".equalsIgnoreCase(cached);
+        }
+        boolean result = isFollowing(user1SubId, user2SubId) && isFollowing(user2SubId, user1SubId);
+        redisService.setWithTtl(cacheKey, String.valueOf(result), mutualCacheTtlSeconds);
+        return result;
+    }
+
+    private String buildMutualCacheKey(String user1, String user2) {
+        String a = user1.compareTo(user2) < 0 ? user1 : user2;
+        String b = user1.compareTo(user2) < 0 ? user2 : user1;
+        return MUTUAL_CACHE_PREFIX + a + ":" + b;
+    }
+
+    private void invalidateMutualCacheForUser(String userId) {
+        redisService.deleteKeysByPattern(MUTUAL_CACHE_PREFIX + userId + ":*");
+        redisService.deleteKeysByPattern(MUTUAL_CACHE_PREFIX + "*:" + userId);
     }
 }
