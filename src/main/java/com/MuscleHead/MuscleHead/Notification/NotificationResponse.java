@@ -20,4 +20,6 @@ public class NotificationResponse {
     private String medalName;
     /** Present when type is MEDAL_EARNED */
     private String medalDescription;
+    /** Present when type is FOLLOW: the follower's sub/user ID */
+    private String actorSubId;
 }

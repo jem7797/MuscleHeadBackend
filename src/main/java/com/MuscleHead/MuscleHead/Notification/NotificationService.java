@@ -35,10 +35,15 @@ public class NotificationService {
     private int cacheTtlSeconds;
 
     public Notification createNotification(User user, NotificationType type, String message) {
+        return createNotification(user, type, message, null);
+    }
+
+    public Notification createNotification(User user, NotificationType type, String message, String actorSubId) {
         Notification n = new Notification();
         n.setUser(user);
         n.setType(type);
         n.setMessage(message);
+        n.setActorSubId(actorSubId);
         Notification saved = notificationRepository.save(n);
         invalidateCacheForUser(user.getSub_id());
         return saved;
@@ -61,7 +66,7 @@ public class NotificationService {
 
     public void createFollowNotification(User followee, User follower) {
         String message = follower.getUsername() + " started following you";
-        createNotification(followee, NotificationType.FOLLOW, message);
+        createNotification(followee, NotificationType.FOLLOW, message, follower.getSub_id());
     }
 
     public Page<NotificationResponse> getNotificationsForUser(String subId, Pageable pageable) {
@@ -132,6 +137,7 @@ public class NotificationService {
                 n.isRead(),
                 medalId,
                 medalName,
-                medalDescription);
+                medalDescription,
+                n.getActorSubId());
     }
 }

@@ -50,6 +50,10 @@ public class Notification {
     @Column(name = "medal_name")
     private String medalName;
 
+    /** For FOLLOW: the follower's sub_id. For other types: optional actor who triggered the notification. */
+    @Column(name = "actor_sub_id")
+    private String actorSubId;
+
     @Column(name = "is_read")
     private boolean isRead = false;
 
