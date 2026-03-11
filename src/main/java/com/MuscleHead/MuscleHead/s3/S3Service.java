@@ -28,6 +28,10 @@ public class S3Service {
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
+    @Value("${aws.s3.pending-bucket}")
+    private String pendingBucketName;
+
+
     @Value("${aws.s3.region:us-east-1}")
     private String region;
 
@@ -51,9 +55,10 @@ public class S3Service {
         try (S3Presigner presigner = createPresigner()) {
 
             PutObjectRequest putRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(objectKey)
-                    .build();
+            .bucket(pendingBucketName) 
+            .key(objectKey)
+            .build();
+    
 
             PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                     .signatureDuration(Duration.ofMinutes(expiryMinutes))
