@@ -1,6 +1,7 @@
 package com.MuscleHead.MuscleHead.Follow;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,74 @@ public class FollowController {
         } catch (IllegalStateException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
+    }
+
+    @PostMapping("request/{followeeSubId}")
+    public ResponseEntity<Void> createFollowRequest(@PathVariable String followeeSubId) {
+        String requesterSubId = SecurityUtils.getCurrentUserSub();
+        if (requesterSubId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            followService.createFollowRequest(requesterSubId, followeeSubId);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+    }
+
+    @GetMapping("requests")
+    public ResponseEntity<List<FollowRequestResponse>> getPendingRequests() {
+        String followeeSubId = SecurityUtils.getCurrentUserSub();
+        if (followeeSubId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            return ResponseEntity.ok(followService.getPendingRequests(followeeSubId));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("requests/{id}/accept")
+    public ResponseEntity<Void> acceptRequest(@PathVariable UUID id) {
+        String followeeSubId = SecurityUtils.getCurrentUserSub();
+        if (followeeSubId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            followService.acceptRequest(id, followeeSubId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("requests/{id}/decline")
+    public ResponseEntity<Void> declineRequest(@PathVariable UUID id) {
+        String followeeSubId = SecurityUtils.getCurrentUserSub();
+        if (followeeSubId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            followService.declineRequest(id, followeeSubId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException ex) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("request-status")
+    public ResponseEntity<String> getRequestStatus(
+            @RequestParam String requester,
+            @RequestParam String followee) {
+        return ResponseEntity.ok(followService.getRequestStatus(requester, followee));
     }
 
     @DeleteMapping("unfollow/{followeeSubId}")

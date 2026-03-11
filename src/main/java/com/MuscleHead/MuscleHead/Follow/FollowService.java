@@ -3,6 +3,10 @@ package com.MuscleHead.MuscleHead.Follow;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +28,24 @@ public class FollowService {
     private static final Logger logger = LoggerFactory.getLogger(FollowService.class);
     private static final String FOLLOWING_CACHE_PREFIX = "following:";
     private static final String MUTUAL_CACHE_PREFIX = "mutual:";
+    private static final String FOLLOWERS_LIST_PREFIX = "follow:followers:";
+    private static final String FOLLOWING_LIST_PREFIX = "follow:following:";
+    private static final String IS_FOLLOWING_PREFIX = "follow:check:";
 
     @Autowired
     private FollowRepository followRepository;
 
+    @Autowired
+    private FollowRequestRepository followRequestRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @Value("${mutual-followers.cache.ttl-seconds:900}")
     private int mutualCacheTtlSeconds;
+
+    @Value("${follow-lists.cache.ttl-seconds:900}")
+    private int followListsCacheTtlSeconds;
 
     @Autowired
     private UserRepository userRepository;
@@ -64,6 +80,107 @@ public class FollowService {
             throw new IllegalStateException("Already following this user");
         }
 
+        if (isPrivate(followee)) {
+            createFollowRequest(followerSubId, followeeSubId);
+            return;
+        }
+
+        createFollowAndNotify(follower, followee, followerSubId, followeeSubId);
+        logger.info("User {} followed user {}", followerSubId, followeeSubId);
+    }
+
+    private boolean isPrivate(User user) {
+        return user != null && "private".equalsIgnoreCase(user.getPrivacy_setting());
+    }
+
+    @Transactional
+    public void createFollowRequest(String requesterSubId, String followeeSubId) {
+        if (requesterSubId == null || followeeSubId == null) {
+            throw new IllegalArgumentException("Requester and followee sub_ids must not be null");
+        }
+        if (requesterSubId.equals(followeeSubId)) {
+            throw new IllegalArgumentException("Users cannot request to follow themselves");
+        }
+
+        User requester = userRepository.findById(requesterSubId)
+                .orElseThrow(() -> new IllegalArgumentException("Requester not found: " + requesterSubId));
+        User followee = userRepository.findById(followeeSubId)
+                .orElseThrow(() -> new IllegalArgumentException("Followee not found: " + followeeSubId));
+
+        if (followRepository.existsByFollowerAndFollowee(requester, followee)) {
+            throw new IllegalStateException("Already following this user");
+        }
+
+        if (followRequestRepository.findPendingByRequesterAndFollowee(requesterSubId, followeeSubId).isPresent()) {
+            throw new IllegalStateException("Follow request already pending");
+        }
+
+        FollowRequest request = new FollowRequest();
+        request.setRequester(requester);
+        request.setFollowee(followee);
+        request.setStatus(FollowRequest.RequestStatus.pending);
+        followRequestRepository.save(request);
+        logger.info("User {} requested to follow user {}", requesterSubId, followeeSubId);
+    }
+
+    public List<FollowRequestResponse> getPendingRequests(String followeeSubId) {
+        User followee = userRepository.findById(followeeSubId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + followeeSubId));
+        return followRequestRepository.findPendingByFollowee(followee).stream()
+                .map(this::toFollowRequestResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void acceptRequest(java.util.UUID requestId, String followeeSubId) {
+        FollowRequest request = followRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Follow request not found: " + requestId));
+        if (!request.getFollowee().getSub_id().equals(followeeSubId)) {
+            throw new IllegalArgumentException("Request does not belong to user");
+        }
+        if (request.getStatus() != FollowRequest.RequestStatus.pending) {
+            throw new IllegalStateException("Request is no longer pending");
+        }
+        request.setStatus(FollowRequest.RequestStatus.accepted);
+        followRequestRepository.save(request);
+        String requesterSubId = request.getRequester().getSub_id();
+        createFollowAndNotify(request.getRequester(), request.getFollowee(), requesterSubId, followeeSubId);
+        invalidateFollowListsCache(requesterSubId, followeeSubId);
+        invalidateIsFollowingCache(requesterSubId, followeeSubId);
+        logger.info("User {} accepted follow request from {}", followeeSubId, requesterSubId);
+    }
+
+    @Transactional
+    public void declineRequest(java.util.UUID requestId, String followeeSubId) {
+        FollowRequest request = followRequestRepository.findById(requestId)
+                .orElseThrow(() -> new IllegalArgumentException("Follow request not found: " + requestId));
+        if (!request.getFollowee().getSub_id().equals(followeeSubId)) {
+            throw new IllegalArgumentException("Request does not belong to user");
+        }
+        if (request.getStatus() != FollowRequest.RequestStatus.pending) {
+            throw new IllegalStateException("Request is no longer pending");
+        }
+        request.setStatus(FollowRequest.RequestStatus.declined);
+        followRequestRepository.save(request);
+        logger.info("User {} declined follow request from {}", followeeSubId, request.getRequester().getSub_id());
+    }
+
+    public String getRequestStatus(String requesterSubId, String followeeSubId) {
+        if (requesterSubId == null || followeeSubId == null) return "none";
+        return followRequestRepository.findPendingByRequesterAndFollowee(requesterSubId, followeeSubId)
+                .isPresent() ? "pending" : "none";
+    }
+
+    private FollowRequestResponse toFollowRequestResponse(FollowRequest request) {
+        return new FollowRequestResponse(
+                request.getId(),
+                UserSummary.from(request.getRequester()),
+                request.getFollowee().getSub_id(),
+                request.getStatus().name(),
+                request.getCreatedAt());
+    }
+
+    private void createFollowAndNotify(User follower, User followee, String followerSubId, String followeeSubId) {
         Follow follow = new Follow();
         follow.setId(new FollowId(followerSubId, followeeSubId));
         follow.setFollower(follower);
@@ -82,8 +199,8 @@ public class FollowService {
         postService.invalidateFeedCacheForUser(followerSubId);
         invalidateMutualCacheForUser(followerSubId);
         invalidateMutualCacheForUser(followeeSubId);
-
-        logger.info("User {} followed user {}", followerSubId, followeeSubId);
+        invalidateFollowListsCache(followerSubId, followeeSubId);
+        invalidateIsFollowingCache(followerSubId, followeeSubId);
     }
 
     @Transactional
@@ -112,32 +229,77 @@ public class FollowService {
         postService.invalidateFeedCacheForUser(followerSubId);
         invalidateMutualCacheForUser(followerSubId);
         invalidateMutualCacheForUser(followeeSubId);
+        invalidateFollowListsCache(followerSubId, followeeSubId);
+        invalidateIsFollowingCache(followerSubId, followeeSubId);
 
         logger.info("User {} unfollowed user {}", followerSubId, followeeSubId);
     }
 
     public List<UserSummary> getFollowers(String subId) {
+        String cacheKey = FOLLOWERS_LIST_PREFIX + subId;
+        String cached = redisService.get(cacheKey);
+        if (cached != null && !cached.isBlank()) {
+            try {
+                logger.debug("Followers for {} served from cache", subId);
+                return objectMapper.readValue(cached, new TypeReference<List<UserSummary>>() {});
+            } catch (JsonProcessingException e) {
+                logger.warn("Failed to parse cached followers for {}: {}", subId, e.getMessage());
+            }
+        }
+
         User user = userRepository.findById(subId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + subId));
-        return followRepository.findByFollowee(user).stream()
+        List<UserSummary> result = followRepository.findByFolloweeExcludingHiddenFollowers(user).stream()
                 .map(f -> UserSummary.from(f.getFollower()))
                 .collect(Collectors.toList());
+        try {
+            redisService.setWithTtl(cacheKey, objectMapper.writeValueAsString(result), followListsCacheTtlSeconds);
+        } catch (JsonProcessingException e) {
+            logger.warn("Failed to cache followers for {}: {}", subId, e.getMessage());
+        }
+        return result;
     }
 
     public List<UserSummary> getFollowing(String subId) {
+        String cacheKey = FOLLOWING_LIST_PREFIX + subId;
+        String cached = redisService.get(cacheKey);
+        if (cached != null && !cached.isBlank()) {
+            try {
+                logger.debug("Following for {} served from cache", subId);
+                return objectMapper.readValue(cached, new TypeReference<List<UserSummary>>() {});
+            } catch (JsonProcessingException e) {
+                logger.warn("Failed to parse cached following for {}: {}", subId, e.getMessage());
+            }
+        }
+
         User user = userRepository.findById(subId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + subId));
-        return followRepository.findByFollower(user).stream()
+        List<UserSummary> result = followRepository.findByFollowerExcludingHiddenFollowees(user).stream()
                 .map(f -> UserSummary.from(f.getFollowee()))
                 .collect(Collectors.toList());
+        try {
+            redisService.setWithTtl(cacheKey, objectMapper.writeValueAsString(result), followListsCacheTtlSeconds);
+        } catch (JsonProcessingException e) {
+            logger.warn("Failed to cache following for {}: {}", subId, e.getMessage());
+        }
+        return result;
     }
 
     public boolean isFollowing(String followerSubId, String followeeSubId) {
         if (followerSubId == null || followeeSubId == null) return false;
-        return userRepository.findById(followerSubId)
+
+        String cacheKey = IS_FOLLOWING_PREFIX + followerSubId + ":" + followeeSubId;
+        String cached = redisService.get(cacheKey);
+        if (cached != null) {
+            return "true".equalsIgnoreCase(cached);
+        }
+
+        boolean result = userRepository.findById(followerSubId)
                 .flatMap(follower -> userRepository.findById(followeeSubId)
                         .map(followee -> followRepository.existsByFollowerAndFollowee(follower, followee)))
                 .orElse(false);
+        redisService.setWithTtl(cacheKey, String.valueOf(result), followListsCacheTtlSeconds);
+        return result;
     }
 
     /**
@@ -167,5 +329,14 @@ public class FollowService {
     private void invalidateMutualCacheForUser(String userId) {
         redisService.deleteKeysByPattern(MUTUAL_CACHE_PREFIX + userId + ":*");
         redisService.deleteKeysByPattern(MUTUAL_CACHE_PREFIX + "*:" + userId);
+    }
+
+    private void invalidateFollowListsCache(String followerSubId, String followeeSubId) {
+        redisService.delete(FOLLOWERS_LIST_PREFIX + followeeSubId);
+        redisService.delete(FOLLOWING_LIST_PREFIX + followerSubId);
+    }
+
+    private void invalidateIsFollowingCache(String followerSubId, String followeeSubId) {
+        redisService.delete(IS_FOLLOWING_PREFIX + followerSubId + ":" + followeeSubId);
     }
 }

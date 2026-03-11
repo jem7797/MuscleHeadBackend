@@ -320,7 +320,15 @@ public class PostService {
             followedSubIds = new java.util.ArrayList<>(followedSubIds);
             followedSubIds.add(followerSubId);
         }
-        Page<Post> posts = postRepository.findByUserSubIdIn(followedSubIds, pageable);
+        List<String> visibleSubIds = userRepository.findVisibleUserSubIds(followedSubIds);
+        if (!visibleSubIds.contains(followerSubId)) {
+            visibleSubIds = new java.util.ArrayList<>(visibleSubIds);
+            visibleSubIds.add(followerSubId);
+        }
+        if (visibleSubIds.isEmpty()) {
+            return new org.springframework.data.domain.PageImpl<>(List.<PostResponse>of(), pageable, 0);
+        }
+        Page<Post> posts = postRepository.findByUserSubIdIn(visibleSubIds, pageable);
         Page<PostResponse> page = posts.map(PostResponse::from);
         page.forEach(this::enrichWithImageUrl);
 

@@ -346,7 +346,7 @@ public class UserService {
         if (query == null || query.trim().length() < 2) {
             throw new IllegalArgumentException("Search query must be at least 2 characters");
         }
-        Page<User> page = userRepository.findByUsernameContainingIgnoreCase(query.trim(), pageable);
+        Page<User> page = userRepository.findByUsernameContainingIgnoreCaseExcludingHidden(query.trim(), pageable);
         page.getContent().forEach(this::ensureUserHasRank);
         return page;
     }
