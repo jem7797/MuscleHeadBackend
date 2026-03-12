@@ -1,5 +1,7 @@
 package com.MuscleHead.MuscleHead.Workout.SessionInstance;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,14 +31,15 @@ public class SessionInstanceController {
     private SessionInstanceService sessionInstanceService;
 
     @PostMapping
-    public ResponseEntity<SessionInstance> createSessionInstance(@Valid @RequestBody SessionInstance sessionInstance) {
+    public ResponseEntity<SessionInstanceDto> createSessionInstance(@Valid @RequestBody SessionInstance sessionInstance) {
         logger.info("Creating new session instance for user: {}",
                 sessionInstance.getUser() != null ? sessionInstance.getUser().getSub_id() : "null");
         try {
             SessionInstance createdSessionInstance = sessionInstanceService.createNewSessionInstance(sessionInstance);
+            SessionInstance withMovement = sessionInstanceService.getSessionInstanceById(createdSessionInstance.getWorkout_exercise_id());
             logger.info("Successfully created session instance with id: {} for user: {}",
                     createdSessionInstance.getWorkout_exercise_id(), createdSessionInstance.getUser().getSub_id());
-            return ResponseEntity.ok(createdSessionInstance);
+            return ResponseEntity.ok(SessionInstanceDto.from(withMovement));
         } catch (Exception ex) {
             logger.error("Error creating session instance for user: {}",
                     sessionInstance.getUser() != null ? sessionInstance.getUser().getSub_id() : "null", ex);
@@ -45,15 +48,16 @@ public class SessionInstanceController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SessionInstance> updateSessionInstance(
+    public ResponseEntity<SessionInstanceDto> updateSessionInstance(
             @PathVariable("id") long sessionInstanceId,
             @Valid @RequestBody SessionInstance sessionInstance) {
         logger.info("Updating session instance with id: {}", sessionInstanceId);
         sessionInstance.setWorkout_exercise_id(sessionInstanceId);
         return sessionInstanceService.updateSessionInstanceById(sessionInstanceId, sessionInstance)
                 .map(updatedSessionInstance -> {
+                    SessionInstance withMovement = sessionInstanceService.getSessionInstanceById(sessionInstanceId);
                     logger.info("Successfully updated session instance with id: {}", sessionInstanceId);
-                    return ResponseEntity.ok(updatedSessionInstance);
+                    return ResponseEntity.ok(SessionInstanceDto.from(withMovement));
                 })
                 .orElseGet(() -> {
                     logger.warn("Session instance not found for update: id: {}", sessionInstanceId);
@@ -73,21 +77,21 @@ public class SessionInstanceController {
     }
 
     @GetMapping("/session/{sessionId}")
-    public ResponseEntity<java.util.List<SessionInstance>> getSessionInstancesBySession(
+    public ResponseEntity<List<SessionInstanceDto>> getSessionInstancesBySession(
             @PathVariable("sessionId") long sessionId) {
         logger.debug("Getting session instances for workout session: {}", sessionId);
-        java.util.List<SessionInstance> sessionInstances = sessionInstanceService.getSessionInstancesBySessionId(sessionId);
+        List<SessionInstance> sessionInstances = sessionInstanceService.getSessionInstancesBySessionId(sessionId);
         logger.debug("Found {} exercises for workout session: {}", sessionInstances.size(), sessionId);
-        return ResponseEntity.ok(sessionInstances);
+        return ResponseEntity.ok(sessionInstances.stream().map(SessionInstanceDto::from).toList());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SessionInstance> getSessionInstanceById(@PathVariable("id") long sessionInstanceId) {
+    public ResponseEntity<SessionInstanceDto> getSessionInstanceById(@PathVariable("id") long sessionInstanceId) {
         logger.debug("Getting session instance by id: {}", sessionInstanceId);
         try {
             SessionInstance sessionInstance = sessionInstanceService.getSessionInstanceById(sessionInstanceId);
             logger.debug("Found session instance with id: {}", sessionInstanceId);
-            return ResponseEntity.ok(sessionInstance);
+            return ResponseEntity.ok(SessionInstanceDto.from(sessionInstance));
         } catch (RuntimeException ex) {
             logger.warn("Session instance not found with id: {}", sessionInstanceId);
             throw ex;
@@ -95,7 +99,7 @@ public class SessionInstanceController {
     }
 
     @GetMapping("/user/{subId}")
-    public ResponseEntity<Page<SessionInstance>> getSessionInstancesForUser(
+    public ResponseEntity<Page<SessionInstanceDto>> getSessionInstancesForUser(
             @PathVariable("subId") String subId,
             @PageableDefault(size = 10, sort = "workout_exercise_id", direction = Sort.Direction.DESC) Pageable pageable) {
         logger.debug("Getting session instances for user: {} with page: {}, size: {}",
@@ -103,6 +107,6 @@ public class SessionInstanceController {
         Page<SessionInstance> sessionInstances = sessionInstanceService.getSessionInstancesByUserId(subId, pageable);
         logger.debug("Found {} session instances for user: {} (page {} of {})",
                 sessionInstances.getNumberOfElements(), subId, sessionInstances.getNumber(), sessionInstances.getTotalPages());
-        return ResponseEntity.ok(sessionInstances);
+        return ResponseEntity.ok(sessionInstances.map(SessionInstanceDto::from));
     }
 }

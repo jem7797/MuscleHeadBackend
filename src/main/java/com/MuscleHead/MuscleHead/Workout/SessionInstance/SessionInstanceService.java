@@ -141,7 +141,7 @@ public class SessionInstanceService {
 
     public SessionInstance getSessionInstanceById(long sessionInstanceId) {
         logger.debug("Getting session instance by id: {}", sessionInstanceId);
-        return sessionInstanceRepository.findById(sessionInstanceId)
+        return sessionInstanceRepository.findByIdWithMovement(sessionInstanceId)
                 .orElseThrow(() -> {
                     logger.warn("Session instance not found with id: {}", sessionInstanceId);
                     return new RuntimeException("Session instance not found: " + sessionInstanceId);
