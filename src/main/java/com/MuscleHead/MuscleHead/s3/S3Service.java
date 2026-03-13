@@ -13,12 +13,17 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import jakarta.annotation.PostConstruct;
+
 import java.time.Duration;
 
 /**
  * Generates presigned URLs so the frontend can upload/download objects
  * to/from S3 directly without proxying through the backend.
  * Credentials: from .env (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY) or system env vars.
+ *
+ * IMPORTANT: Upload and download use the same bucket. Frontend MUST send the exact
+ * Content-Type header (from PresignedUrlResponse.contentType) when PUTting to the upload URL.
  */
 @Service
 public class S3Service {
@@ -28,9 +33,12 @@ public class S3Service {
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
-    @Value("${aws.s3.pending-bucket}")
-    private String pendingBucketName;
-
+    /**
+     * Bucket for uploads. Defaults to main bucket so upload and download use the same bucket.
+     * Set aws.s3.upload-bucket to override (e.g. for a pending/moderation workflow).
+     */
+    @Value("${aws.s3.upload-bucket:${aws.s3.bucket}}")
+    private String uploadBucketName;
 
     @Value("${aws.s3.region:us-east-1}")
     private String region;
@@ -59,7 +67,7 @@ public class S3Service {
         try (S3Presigner presigner = createPresigner()) {
 
             PutObjectRequest putRequest = PutObjectRequest.builder()
-                    .bucket(pendingBucketName)
+                    .bucket(uploadBucketName)
                     .key(objectKey)
                     .contentType(effectiveContentType)
                     .build();
@@ -70,7 +78,8 @@ public class S3Service {
                     .build();
 
             String url = presigner.presignPutObject(presignRequest).url().toExternalForm();
-            logger.info("Generated presigned upload URL for key: {}", objectKey);
+            logger.info("[S3 UPLOAD] Generated presigned URL | bucket={} | key={} | contentType={} | client MUST use this exact Content-Type when PUTting",
+                    uploadBucketName, objectKey, effectiveContentType);
             return url;
         } catch (Exception e) {
             String causeMsg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
@@ -100,13 +109,19 @@ public class S3Service {
                     .build();
 
             String url = presigner.presignGetObject(presignRequest).url().toExternalForm();
-            logger.info("Generated presigned download URL for key: {}", objectKey);
+            logger.info("[S3 DOWNLOAD] Generated presigned URL | bucket={} | key={}", bucketName, objectKey);
             return url;
         } catch (Exception e) {
             String causeMsg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
             logger.error("Failed to generate presigned download URL for key: {} - Cause: {}", objectKey, causeMsg, e);
             throw new RuntimeException("Failed to generate download URL", e);
         }
+    }
+
+    @PostConstruct
+    void logBucketConfig() {
+        logger.info("[S3] Bucket config: upload={} | download={} | region={} | expiry={}min",
+                uploadBucketName, bucketName, region, expiryMinutes);
     }
 
     private S3Presigner createPresigner() {

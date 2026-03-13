@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.validation.annotation.Validated;
 
 import com.MuscleHead.MuscleHead.config.SecurityUtils;
+import com.MuscleHead.MuscleHead.s3.S3Service;
 import com.MuscleHead.MuscleHead.validation.OnCreate;
 import com.MuscleHead.MuscleHead.validation.OnUpdate;
 
@@ -43,6 +44,9 @@ public class UserController {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private S3Service s3Service;
+
     @PostMapping("minor-signup-attempt")
     public ResponseEntity<Void> recordMinorSignupAttempt(
             @Valid @RequestBody MinorSignupAttemptRequest request) {
@@ -60,6 +64,7 @@ public class UserController {
         
         try {
             User createdUser = userService.createNewUser(user);
+            enrichProfilePicUrl(createdUser);
             logger.info("Successfully created user with sub_id: {}", createdUser.getSub_id());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
         } catch (IllegalStateException ex) {
@@ -79,7 +84,9 @@ public class UserController {
 
         return userService.partialUpdate(subId, request)
                 .map(updatedUser -> {
-                    logger.info("Successfully partially updated user with sub_id: {}", subId);
+                    enrichProfilePicUrl(updatedUser);
+                    logger.info("Successfully partially updated user with sub_id: {} | profilePicUrl={}",
+                            subId, updatedUser.getProfilePicUrl());
                     return ResponseEntity.ok(updatedUser);
                 })
                 .orElseGet(() -> {
@@ -100,7 +107,8 @@ public class UserController {
 
         return userService.updateUser(user)
                 .map(updatedUser -> {
-                    logger.info("Successfully updated user with sub_id: {}", subId);
+                    enrichProfilePicUrl(updatedUser);
+                    logger.info("Successfully updated user with sub_id: {} | profilePicUrl={}", subId, updatedUser.getProfilePicUrl());
                     return ResponseEntity.ok(updatedUser);
                 })
                 .orElseGet(() -> {
@@ -143,6 +151,7 @@ public class UserController {
         }
         return userService.getUserById(subId)
                 .map(user -> {
+                    enrichProfilePicUrl(user);
                     logUserSentToFrontend(user, "me", subId);
                     return ResponseEntity.ok(user);
                 })
@@ -159,6 +168,7 @@ public class UserController {
             
             return userService.getUserById(subId)
                     .map(user -> {
+                        enrichProfilePicUrl(user);
                         logUserSentToFrontend(user, "subId", subId);
                         return ResponseEntity.ok(user);
                     })
@@ -173,6 +183,7 @@ public class UserController {
             
             return userService.getUserByUsername(username)
                     .map(user -> {
+                        enrichProfilePicUrl(user);
                         logUserSentToFrontend(user, "username", username);
                         return ResponseEntity.ok(user);
                     })
@@ -191,9 +202,27 @@ public class UserController {
             @PageableDefault(size = 10) Pageable pageable) {
         try {
             Page<User> results = userService.searchUsers(q, pageable);
+            results.getContent().forEach(this::enrichProfilePicUrl);
             return ResponseEntity.ok(results);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Replaces profilePicUrl (S3 object key) with a presigned download URL for display.
+     * Only if profilePicUrl looks like an S3 key (not already a full URL).
+     */
+    private void enrichProfilePicUrl(User user) {
+        if (user == null || user.getProfilePicUrl() == null || user.getProfilePicUrl().isBlank()) return;
+        String key = user.getProfilePicUrl();
+        if (key.startsWith("http://") || key.startsWith("https://")) return; // already a URL
+        try {
+            String presignedUrl = s3Service.generatePresignedDownloadUrl(key);
+            user.setProfilePicUrl(presignedUrl);
+            logger.debug("[PROFILE-PIC] Enriched key {} -> presigned URL for user {}", key, user.getSub_id());
+        } catch (Exception e) {
+            logger.warn("[PROFILE-PIC] Failed to generate presigned URL for key {}: {}", key, e.getMessage());
         }
     }
 

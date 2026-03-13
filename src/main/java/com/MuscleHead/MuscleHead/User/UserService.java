@@ -185,8 +185,10 @@ public class UserService {
                         existingUser.setPrivacy_setting(request.getPrivacy_setting());
                     }
                     if (request.getProfilePicUrl() != null) {
-                        existingUser.setProfilePicUrl(request.getProfilePicUrl());
+                        String newKey = request.getProfilePicUrl();
+                        existingUser.setProfilePicUrl(newKey);
                         existingUser.setProfilePicVersion(System.currentTimeMillis());
+                        logger.info("[PROFILE-PIC] Updated user {} | new profilePicUrl (S3 key)={}", subId, newKey);
                     }
                     if (request.getNattyStatus() != null) {
                         existingUser.setNattyStatus(request.getNattyStatus());
@@ -253,8 +255,10 @@ public class UserService {
                     existingUser.setNumber_of_followers(updatedUser.getNumber_of_followers());
                     existingUser.setNumber_following(updatedUser.getNumber_following());
                     if (updatedUser.getProfilePicUrl() != null) {
-                        existingUser.setProfilePicUrl(updatedUser.getProfilePicUrl());
+                        String newKey = updatedUser.getProfilePicUrl();
+                        existingUser.setProfilePicUrl(newKey);
                         existingUser.setProfilePicVersion(System.currentTimeMillis());
+                        logger.info("[PROFILE-PIC] Updated user {} | new profilePicUrl (S3 key)={}", updatedUser.getSub_id(), newKey);
                     }
                     existingUser.setBio(updatedUser.getBio());
                     existingUser.setGender(updatedUser.getGender());

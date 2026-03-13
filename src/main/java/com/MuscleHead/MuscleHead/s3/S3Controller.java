@@ -29,17 +29,24 @@ public class S3Controller {
 
     @PostMapping("presigned-url")
     public ResponseEntity<PresignedUrlResponse> getPresignedUrl(@Valid @RequestBody PresignedUrlRequest request) {
+        logger.info("[PRESIGNED-URL] Request received | operation={} | objectKey={} | contentType={}",
+                request.getOperation(), request.getObjectKey(), request.getEffectiveContentType());
+
         String subId = SecurityUtils.getCurrentUserSub();
         if (subId == null) {
-            logger.warn("Presigned URL requested without authentication");
+            logger.warn("[PRESIGNED-URL] Rejected: no authentication");
             return ResponseEntity.status(401).build();
         }
 
         String url;
         if (request.getOperation() == PresignedUrlRequest.Operation.DOWNLOAD) {
             url = s3Service.generatePresignedDownloadUrl(request.getObjectKey());
+            logger.info("[PRESIGNED-URL] Returning DOWNLOAD URL for key={}", request.getObjectKey());
         } else {
-            url = s3Service.generatePresignedUploadUrl(request.getObjectKey(), request.getEffectiveContentType());
+            String effectiveContentType = request.getEffectiveContentType();
+            url = s3Service.generatePresignedUploadUrl(request.getObjectKey(), effectiveContentType);
+            logger.info("[PRESIGNED-URL] Returning UPLOAD URL for key={} | client MUST send Content-Type: {} when PUTting",
+                    request.getObjectKey(), effectiveContentType);
         }
 
         String contentType = request.getOperation() == PresignedUrlRequest.Operation.UPLOAD
