@@ -46,19 +46,23 @@ public class S3Service {
 
     /**
      * Generates a presigned PUT URL for uploading an object.
-     * Frontend uses this URL with a PUT request and the file bytes in the body.
+     * Frontend must use the same Content-Type header when uploading to avoid 403 signature mismatch.
      *
-     * @param objectKey S3 object key (e.g., "users/{subId}/profile.jpg")
+     * @param objectKey   S3 object key (e.g., "users/{subId}/profile.jpg")
+     * @param contentType Content-Type for the upload (use "application/octet-stream" if unsure)
      * @return Presigned URL
      */
-    public String generatePresignedUploadUrl(String objectKey) {
+    public String generatePresignedUploadUrl(String objectKey, String contentType) {
+        String effectiveContentType = (contentType != null && !contentType.isBlank())
+                ? contentType
+                : "application/octet-stream";
         try (S3Presigner presigner = createPresigner()) {
 
             PutObjectRequest putRequest = PutObjectRequest.builder()
-            .bucket(pendingBucketName) 
-            .key(objectKey)
-            .build();
-    
+                    .bucket(pendingBucketName)
+                    .key(objectKey)
+                    .contentType(effectiveContentType)
+                    .build();
 
             PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
                     .signatureDuration(Duration.ofMinutes(expiryMinutes))

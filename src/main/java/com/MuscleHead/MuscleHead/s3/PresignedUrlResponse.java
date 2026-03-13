@@ -11,4 +11,6 @@ public class PresignedUrlResponse {
 
     private String url;
     private String objectKey;
+    /** Content-Type the client must use when uploading to this URL. */
+    private String contentType;
 }

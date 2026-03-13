@@ -39,9 +39,12 @@ public class S3Controller {
         if (request.getOperation() == PresignedUrlRequest.Operation.DOWNLOAD) {
             url = s3Service.generatePresignedDownloadUrl(request.getObjectKey());
         } else {
-            url = s3Service.generatePresignedUploadUrl(request.getObjectKey());
+            url = s3Service.generatePresignedUploadUrl(request.getObjectKey(), request.getEffectiveContentType());
         }
 
-        return ResponseEntity.ok(new PresignedUrlResponse(url, request.getObjectKey()));
+        String contentType = request.getOperation() == PresignedUrlRequest.Operation.UPLOAD
+                ? request.getEffectiveContentType()
+                : null;
+        return ResponseEntity.ok(new PresignedUrlResponse(url, request.getObjectKey(), contentType));
     }
 }

@@ -47,15 +47,17 @@ public class PostController {
     /**
      * Get presigned upload URL for a post image. Client uploads to S3, then uses objectKey
      * as imageLink when creating the post.
+     * Accepts optional contentType/content_type in the body; always uses "application/octet-stream" when generating the URL.
      */
     @PostMapping("/presigned-image-url")
-    public ResponseEntity<PostImageUploadResponse> getPresignedImageUrl() {
+    public ResponseEntity<PostImageUploadResponse> getPresignedImageUrl(
+            @RequestBody(required = false) PresignedImageUrlRequest request) {
         String subId = SecurityUtils.getCurrentUserSub();
         if (subId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         String objectKey = POST_IMAGE_PREFIX + subId + "/" + UUID.randomUUID() + ".jpg";
-        String uploadUrl = s3Service.generatePresignedUploadUrl(objectKey);
+        String uploadUrl = s3Service.generatePresignedUploadUrl(objectKey, "application/octet-stream");
         return ResponseEntity.ok(new PostImageUploadResponse(uploadUrl, objectKey));
     }
 
