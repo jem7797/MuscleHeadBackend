@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -198,14 +200,27 @@ public class UserController {
 
     @GetMapping("search")
     public ResponseEntity<Page<User>> searchUsers(
-            @RequestParam String q,
+            @RequestParam(required = false) String q,
             @PageableDefault(size = 10) Pageable pageable) {
+        // Always return valid JSON: empty page for missing/short query, results otherwise
+        if (q == null || q.isBlank() || q.trim().length() < 2) {
+            Page<User> emptyPage = new PageImpl<>(
+                    java.util.Collections.emptyList(),
+                    PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort()),
+                    0);
+            return ResponseEntity.ok(emptyPage);
+        }
         try {
-            Page<User> results = userService.searchUsers(q, pageable);
+            Page<User> results = userService.searchUsers(q.trim(), pageable);
             results.getContent().forEach(this::enrichProfilePicUrl);
             return ResponseEntity.ok(results);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().build();
+        } catch (Exception ex) {
+            logger.warn("Search failed for q={}: {}", q, ex.getMessage());
+            Page<User> emptyPage = new PageImpl<>(
+                    java.util.Collections.emptyList(),
+                    PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort()),
+                    0);
+            return ResponseEntity.ok(emptyPage);
         }
     }
 
