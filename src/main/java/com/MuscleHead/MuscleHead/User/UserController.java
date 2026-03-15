@@ -202,25 +202,41 @@ public class UserController {
     public ResponseEntity<Page<User>> searchUsers(
             @RequestParam(required = false) String q,
             @PageableDefault(size = 10) Pageable pageable) {
+        logger.info("[SEARCH] Request received | q={} | page={} | size={}", q, pageable.getPageNumber(), pageable.getPageSize());
+
         // Always return valid JSON: empty page for missing/short query, results otherwise
         if (q == null || q.isBlank() || q.trim().length() < 2) {
             Page<User> emptyPage = new PageImpl<>(
                     java.util.Collections.emptyList(),
                     PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort()),
                     0);
+            logSearchResponse("empty (query too short/missing)", emptyPage);
             return ResponseEntity.ok(emptyPage);
         }
         try {
             Page<User> results = userService.searchUsers(q.trim(), pageable);
             results.getContent().forEach(this::enrichProfilePicUrl);
+            logSearchResponse("success", results);
             return ResponseEntity.ok(results);
         } catch (Exception ex) {
-            logger.warn("Search failed for q={}: {}", q, ex.getMessage());
+            logger.warn("[SEARCH] Failed for q={}: {}", q, ex.getMessage());
             Page<User> emptyPage = new PageImpl<>(
                     java.util.Collections.emptyList(),
                     PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort()),
                     0);
+            logSearchResponse("empty (exception)", emptyPage);
             return ResponseEntity.ok(emptyPage);
+        }
+    }
+
+    private void logSearchResponse(String outcome, Page<User> page) {
+        try {
+            String json = objectMapper.writeValueAsString(page);
+            logger.info("[SEARCH] Returning {} | contentSize={} | totalElements={} | responseLength={} | responsePreview={}",
+                    outcome, page.getContent().size(), page.getTotalElements(), json.length(),
+                    json.length() > 200 ? json.substring(0, 200) + "..." : json);
+        } catch (Exception e) {
+            logger.warn("[SEARCH] Could not serialize response for logging: {}", e.getMessage());
         }
     }
 
