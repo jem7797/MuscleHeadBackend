@@ -105,10 +105,11 @@ public class FollowController {
     }
 
     @GetMapping("request-status")
-    public ResponseEntity<String> getRequestStatus(
+    public ResponseEntity<java.util.Map<String,String>> getRequestStatus(
             @RequestParam String requester,
             @RequestParam String followee) {
-        return ResponseEntity.ok(followService.getRequestStatus(requester, followee));
+        String status = followService.getRequestStatus(requester, followee);
+        return ResponseEntity.ok(java.util.Map.of("status", status));
     }
 
     @DeleteMapping("unfollow/{followeeSubId}")
