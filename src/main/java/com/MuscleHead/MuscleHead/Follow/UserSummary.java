@@ -28,6 +28,6 @@ public class UserSummary {
                 user.getUsername(),
                 user.getProfilePicUrl(),
                 user.getProfilePicVersion(),
-                user.getGender());
+                user.getGender() != null ? user.getGender().name() : null);
     }
 }

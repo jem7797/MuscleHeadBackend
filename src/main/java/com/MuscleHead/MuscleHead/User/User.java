@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.JoinColumn;
@@ -130,7 +132,15 @@ public class User {
     private String bio;
 
     /** Optional. e.g. "female", "male", "non-binary". Null when not set. */
-    private String gender;
+
+    public enum Gender{
+        Male,
+        Female
+    }
+
+
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 
     @JsonIgnore
     @OneToMany(fetch = jakarta.persistence.FetchType.EAGER)
@@ -195,6 +205,22 @@ public class User {
             date_created = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         }
 
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public void setGender(String gender) {
+        if (gender == null) {
+            this.gender = null;
+        } else if (gender.equalsIgnoreCase("male")) {
+            this.gender = Gender.Male;
+        } else if (gender.equalsIgnoreCase("female")) {
+            this.gender = Gender.Female;
+        } else {
+            this.gender = null;
+        }
     }
 
 }
