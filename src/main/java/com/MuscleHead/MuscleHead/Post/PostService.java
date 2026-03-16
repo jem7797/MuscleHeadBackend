@@ -190,6 +190,7 @@ public class PostService {
         userRepository.save(author);
         postRepository.delete(post);
         redisService.delete(POST_CACHE_PREFIX + postId);
+        invalidateFeedCacheForUser(author.getSub_id());
         logger.info("Post {} deleted", postId);
     }
 
