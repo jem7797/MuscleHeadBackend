@@ -350,7 +350,13 @@ public class UserService {
         if (query == null || query.trim().length() < 2) {
             throw new IllegalArgumentException("Search query must be at least 2 characters");
         }
-        Page<User> page = userRepository.findByUsernameContainingIgnoreCaseExcludingHidden(query.trim(), pageable);
+
+        String escapedCharacters = query.trim()
+        .replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_");
+
+        Page<User> page = userRepository.findByUsernameContainingIgnoreCaseExcludingHidden(escapedCharacters, pageable);
         page.getContent().forEach(this::ensureUserHasRank);
         return page;
     }

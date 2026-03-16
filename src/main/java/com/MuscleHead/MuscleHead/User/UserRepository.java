@@ -15,8 +15,8 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     Page<User> findByUsernameContainingIgnoreCase(String query, Pageable pageable);
 
-    @Query(value = "SELECT u FROM User u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) AND (u.privacy_setting IS NULL OR u.privacy_setting != 'hidden')",
-           countQuery = "SELECT COUNT(u) FROM User u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) AND (u.privacy_setting IS NULL OR u.privacy_setting != 'hidden')")
+    @Query(value = "SELECT u FROM User u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\' AND (u.privacy_setting IS NULL OR u.privacy_setting != 'hidden')",
+           countQuery = "SELECT COUNT(u) FROM User u WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) ESCAPE '\\' AND (u.privacy_setting IS NULL OR u.privacy_setting != 'hidden')")
     Page<User> findByUsernameContainingIgnoreCaseExcludingHidden(@Param("query") String query, Pageable pageable);
 
     @Query("SELECT u.sub_id FROM User u WHERE u.sub_id IN :subIds AND (u.privacy_setting IS NULL OR u.privacy_setting != 'hidden')")
