@@ -1,5 +1,7 @@
 package com.MuscleHead.MuscleHead.Notification;
 
+import java.util.List;
+
 import java.time.format.DateTimeFormatter;
 import java.time.ZoneId;
 
@@ -107,6 +109,15 @@ public class NotificationService {
         }
         n.setRead(true);
         notificationRepository.save(n);
+        invalidateCacheForUser(subId);
+    }
+
+    public void markAllAsRead(String subId) {
+        List<Notification> unread = notificationRepository.findUnreadByUserSubId(subId);
+        for (Notification n : unread) {
+            n.setRead(true);
+        }
+        notificationRepository.saveAll(unread);
         invalidateCacheForUser(subId);
     }
 

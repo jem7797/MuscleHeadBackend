@@ -48,4 +48,14 @@ public class NotificationController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PatchMapping("/read-all")
+    public ResponseEntity<Void> markAllAsRead() {
+        String subId = SecurityUtils.getCurrentUserSub();
+        if (subId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        notificationService.markAllAsRead(subId);
+        return ResponseEntity.noContent().build();
+    }
 }

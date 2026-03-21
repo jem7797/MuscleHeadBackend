@@ -1,11 +1,14 @@
 package com.MuscleHead.MuscleHead.User;
 
+
+
+
+
 import com.MuscleHead.MuscleHead.Notification.NotificationService;
 import com.MuscleHead.MuscleHead.Notification.NotificationType;
 import com.MuscleHead.MuscleHead.Rank.RankRepository;
 import com.MuscleHead.MuscleHead.cache.RedisService;
 import com.MuscleHead.MuscleHead.exception.UnderAgeException;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -147,6 +150,10 @@ public class UserService {
                             throw new IllegalArgumentException("Username cannot be empty");
                         }
                         existingUser.setUsername(request.getUsername());
+
+
+
+
                     }
                     if (request.getEmail() != null) {
                         if (request.getEmail().isBlank()) {
