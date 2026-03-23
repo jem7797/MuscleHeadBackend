@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
 import com.MuscleHead.MuscleHead.exception.LiveSessionForbiddenException;
 
@@ -39,9 +40,13 @@ public class LiveSessionService {
         userRepository.findById(hostUserId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + hostUserId));
 
+               User host = userRepository.findById(hostUserId)
+               .orElseThrow(() -> new IllegalArgumentException("User not found: " + hostUserId));
+
         LiveWorkoutSession session = new LiveWorkoutSession();
         session.setHostUserId(hostUserId);
         session.setStatus(LiveWorkoutSession.SessionStatus.PENDING);
+        session.setHostUserName(host.getUsername());
         session = sessionRepository.save(session);
 
         logger.info("Created live workout session {} for host {}", session.getId(), hostUserId);
@@ -194,6 +199,7 @@ public class LiveSessionService {
                 session.getGuestUserId(),
                 session.getStatus().name(),
                 session.getCreatedAt(),
+                session.getHostUserName(),
                 hostExercises,
                 guestExercises);
     }
@@ -211,9 +217,10 @@ public class LiveSessionService {
                         i.getFromUserId(),
                         i.getMessage() != null ? i.getMessage() : "",
                         i.getSentAt(),
+                        i.getHostUserName(),
                         i.getStatus() != null ? i.getStatus().name() : null
-                    
-                    ))
+
+                ))
 
                 .collect(Collectors.toList());
     }

@@ -16,6 +16,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Immutable;
@@ -41,6 +42,9 @@ public class SessionInvite {
 
     @Column(name = "to_user_id", nullable = false)
     private String toUserId;
+
+    @NotBlank
+    private String hostUserName;
 
     private String message;
 

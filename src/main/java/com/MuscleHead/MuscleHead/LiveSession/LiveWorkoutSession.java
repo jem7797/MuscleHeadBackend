@@ -37,6 +37,8 @@ public class LiveWorkoutSession {
     @Column(name = "guest_user_id")
     private String guestUserId;
 
+private String hostUserName;
+
     @Enumerated(EnumType.STRING)
     private SessionStatus status = SessionStatus.PENDING;
 
