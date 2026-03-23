@@ -210,7 +210,11 @@ public class LiveSessionService {
                         i.getSession().getId(),
                         i.getFromUserId(),
                         i.getMessage() != null ? i.getMessage() : "",
-                        i.getSentAt()))
+                        i.getSentAt(),
+                        i.getStatus() != null ? i.getStatus().name() : null
+                    
+                    ))
+
                 .collect(Collectors.toList());
     }
 }

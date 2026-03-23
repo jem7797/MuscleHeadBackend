@@ -17,4 +17,5 @@ public class PendingInviteResponse {
     private String fromUserId;
     private String message;
     private Instant sentAt;
+    private String status; 
 }
