@@ -43,7 +43,7 @@ public class SessionInvite {
     @Column(name = "to_user_id", nullable = false)
     private String toUserId;
 
-    @NotBlank
+    @Column (name = "host_user_name", nullable = false)
     private String hostUserName;
 
     private String message;
