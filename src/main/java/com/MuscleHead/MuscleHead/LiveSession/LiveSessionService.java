@@ -37,11 +37,9 @@ public class LiveSessionService {
         if (hostUserId == null || hostUserId.isBlank()) {
             throw new IllegalArgumentException("Host user ID is required");
         }
-        userRepository.findById(hostUserId)
+      
+        User host = userRepository.findById(hostUserId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + hostUserId));
-
-               User host = userRepository.findById(hostUserId)
-               .orElseThrow(() -> new IllegalArgumentException("User not found: " + hostUserId));
 
         LiveWorkoutSession session = new LiveWorkoutSession();
         session.setHostUserId(hostUserId);
@@ -88,6 +86,7 @@ public class LiveSessionService {
         invite.setToUserId(toUserId);
         invite.setMessage(message != null ? message : "");
         invite.setStatus(SessionInvite.InviteStatus.pending);
+        invite.setHostUserName(session.getHostUserName());
         inviteRepository.save(invite);
 
         logger.info("Sent invite {} for session {} from {} to {}", invite.getId(), sessionId, fromUserId, toUserId);
