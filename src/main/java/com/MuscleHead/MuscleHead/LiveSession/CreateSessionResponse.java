@@ -16,4 +16,5 @@ public class CreateSessionResponse {
     private String hostUserId;
     private String status;
     private Instant createdAt;
+    private String hostUserName;
 }

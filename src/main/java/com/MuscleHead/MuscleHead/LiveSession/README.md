@@ -2,6 +2,8 @@
 
 Live workout sessions where a host can invite a guest to workout together.
 
+**Invites (data model, API, JSON shapes, `hostUserName`):** see [INVITES.md](./INVITES.md).
+
 ## What's Here
 
 | File | Purpose |

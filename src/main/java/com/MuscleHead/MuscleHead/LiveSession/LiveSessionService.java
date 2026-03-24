@@ -53,7 +53,9 @@ public class LiveSessionService {
                 session.getId(),
                 session.getHostUserId(),
                 session.getStatus().name(),
-                session.getCreatedAt());
+                session.getCreatedAt(),
+                session.getHostUserName()
+        );
     }
 
     @Transactional
