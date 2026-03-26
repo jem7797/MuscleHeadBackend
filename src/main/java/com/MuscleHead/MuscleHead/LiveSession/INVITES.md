@@ -109,6 +109,24 @@ This is **denormalization**: the same logical fact (host’s display name) is du
 
 Field names are **camelCase** (`hostUserName`, not `host_user_name`). `sentAt` is serialized as an ISO-8601 string (Jackson default for `Instant`).
 
+### List unseen pending invites (recipient, for toast only)
+
+`GET /api/live-sessions/invites/pending/unseen`  
+**Auth:** required.
+
+Returns only invites that are still `pending` **and** have not been acknowledged as toast-shown (`recipientToastSeenAt IS NULL`).
+
+**Response** `200` — same array shape as `/invites/pending`.
+
+### Mark invite toast as seen (recipient)
+
+`POST /api/live-sessions/invites/{inviteId}/toast-seen`  
+**Auth:** required. Caller must be the invite recipient (`toUserId`).
+
+Marks `recipientToastSeenAt` if it is not already set. This is idempotent and independent from invite `status`.
+
+**Response** `204` — empty body.
+
 ### Accept invite
 
 `POST /api/live-sessions/invites/{inviteId}/accept`  
@@ -131,15 +149,29 @@ Field names are **camelCase** (`hostUserName`, not `host_user_name`). `sentAt` i
 4. Friend: `POST /invites/{inviteId}/accept` or `.../decline`.
 5. After accept, both can use `GET /{sessionId}` for full session details (includes `hostUserName` and exercises).
 
-## Implementation map
+## Files and responsibilities
 
-| Concern | Location |
-|---------|----------|
-| HTTP routes | `LiveSessionController.java` |
-| Business rules + mapping to DTOs | `LiveSessionService.java` |
-| Invite persistence | `SessionInvite.java`, `SessionInviteRepository.java` |
-| Request body for send invite | `InviteRequest.java` |
-| Pending list JSON shape | `PendingInviteResponse.java` |
+Each file below is part of (or directly supports) the invite flow. Paths are relative to this package unless noted.
+
+| File | What it does |
+|------|----------------|
+| **`LiveSessionController.java`** | Exposes HTTP routes under `/api/live-sessions`. Reads the current user from `SecurityUtils.getCurrentUserSub()`, returns appropriate status codes, and delegates all invite/session logic to `LiveSessionService`. Does not contain business rules. |
+| **`LiveSessionService.java`** | Implements invite behavior: `createSession` (loads host user, sets `hostUserName` on the session), `sendInvite` (validates host/session/recipient, builds and saves `SessionInvite` with copied `hostUserName`), `acceptInvite` / `declineInvite` (authorization and status transitions; accept also updates the session guest and status), `getPendingInvites` (maps entities to `PendingInviteResponse`), `getSession` (builds `SessionDetailsResponse` including `hostUserName`). Uses `UserRepository`, `LiveWorkoutSessionRepository`, `SessionInviteRepository`. |
+| **`SessionInvite.java`** | JPA entity for table `session_invites`. Holds FK to `LiveWorkoutSession`, `fromUserId`, `toUserId`, denormalized `hostUserName`, `message`, `status`, `sentAt`. Defines `InviteStatus` enum (`pending`, `accepted`, `declined`). |
+| **`SessionInviteRepository.java`** | Spring Data repository for `SessionInvite`. Standard `save` / `findById`; custom query `findPendingInvitesForUser(userId)` returns invites where `toUserId` matches and status is `pending`, ordered by `sentAt` descending. |
+| **`LiveWorkoutSession.java`** | JPA entity for `live_workout_sessions`. Stores `hostUserId`, optional `guestUserId`, `hostUserName`, `status`, `createdAt`. Invite flow depends on it: invites reference a session; accept sets guest and moves status to `in_progress`. |
+| **`LiveWorkoutSessionRepository.java`** | Persists and loads `LiveWorkoutSession` rows used when creating sessions, sending invites, accepting, and loading session details. |
+| **`InviteRequest.java`** | Request DTO for `POST .../{sessionId}/invite`. Validates `toUserId` as required (`@NotBlank`); optional `message`. Jackson deserializes JSON into this type. |
+| **`PendingInviteResponse.java`** | Response DTO for `GET .../invites/pending`. Defines the JSON shape: `inviteId`, `sessionId`, `fromUserId`, `message`, `sentAt`, `hostUserName`, `status`. Built in `LiveSessionService.getPendingInvites`. |
+| **`CreateSessionResponse.java`** | Response DTO for `POST .../create`. Returns `id`, `hostUserId`, `status`, `createdAt`, `hostUserName` so the host client can show the session and label without another call. |
+| **`SessionDetailsResponse.java`** | Response DTO for `GET .../{sessionId}`. Includes session metadata (`hostUserId`, `guestUserId`, `status`, `createdAt`, `hostUserName`) plus exercise lists. Used after accept (and anytime session detail is needed). |
+
+**Outside this package (invite flow still depends on them):**
+
+| File / type | Role |
+|-------------|------|
+| **`config/SecurityUtils.java`** | Supplies Cognito `sub` for the authenticated user; controller uses it for every protected endpoint. |
+| **`User/User.java`**, **`User/UserRepository.java`** | `LiveSessionService` loads the host to set `username` on the session and checks that `toUserId` exists before sending an invite. |
 
 ## Related
 

@@ -3,6 +3,7 @@ package com.MuscleHead.MuscleHead.LiveSession;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -212,17 +213,43 @@ public class LiveSessionService {
 
         List<SessionInvite> invites = inviteRepository.findPendingInvitesForUser(userId);
         return invites.stream()
-                .map(i -> new PendingInviteResponse(
-                        i.getId(),
-                        i.getSession().getId(),
-                        i.getFromUserId(),
-                        i.getMessage() != null ? i.getMessage() : "",
-                        i.getSentAt(),
-                        i.getHostUserName(),
-                        i.getStatus() != null ? i.getStatus().name() : null
-
-                ))
-
+                .map(this::toPendingInviteResponse)
                 .collect(Collectors.toList());
+    }
+
+    public List<PendingInviteResponse> getUnseenPendingInvites(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+
+        List<SessionInvite> invites = inviteRepository.findUnseenPendingInvitesForUser(userId);
+        return invites.stream()
+                .map(this::toPendingInviteResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void markInviteToastSeen(UUID inviteId, String userId) {
+        if (inviteId == null || userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("Invite ID and user ID are required");
+        }
+
+        SessionInvite invite = inviteRepository.findByIdAndToUserId(inviteId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("Invite not found for user: " + inviteId));
+        if (invite.getRecipientToastSeenAt() == null) {
+            invite.setRecipientToastSeenAt(Instant.now());
+            inviteRepository.save(invite);
+        }
+    }
+
+    private PendingInviteResponse toPendingInviteResponse(SessionInvite i) {
+        return new PendingInviteResponse(
+                i.getId(),
+                i.getSession().getId(),
+                i.getFromUserId(),
+                i.getMessage() != null ? i.getMessage() : "",
+                i.getSentAt(),
+                i.getHostUserName(),
+                i.getStatus() != null ? i.getStatus().name() : null);
     }
 }

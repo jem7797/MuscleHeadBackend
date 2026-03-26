@@ -51,6 +51,9 @@ public class SessionInvite {
     @Column(name = "sent_at", nullable = false, updatable = false)
     private Instant sentAt;
 
+    @Column(name = "recipient_toast_seen_at")
+    private Instant recipientToastSeenAt;
+
     @PrePersist
     protected void onCreate() {
         if (sentAt == null) {

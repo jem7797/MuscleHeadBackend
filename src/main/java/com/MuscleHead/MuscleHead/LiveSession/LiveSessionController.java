@@ -100,4 +100,24 @@ public class LiveSessionController {
         List<PendingInviteResponse> invites = liveSessionService.getPendingInvites(userId);
         return ResponseEntity.ok(invites);
     }
+
+    @GetMapping("/invites/pending/unseen")
+    public ResponseEntity<List<PendingInviteResponse>> getUnseenPendingInvites() {
+        String userId = SecurityUtils.getCurrentUserSub();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<PendingInviteResponse> invites = liveSessionService.getUnseenPendingInvites(userId);
+        return ResponseEntity.ok(invites);
+    }
+
+    @PostMapping("/invites/{inviteId}/toast-seen")
+    public ResponseEntity<Void> markInviteToastSeen(@PathVariable UUID inviteId) {
+        String userId = SecurityUtils.getCurrentUserSub();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        liveSessionService.markInviteToastSeen(inviteId, userId);
+        return ResponseEntity.noContent().build();
+    }
 }
