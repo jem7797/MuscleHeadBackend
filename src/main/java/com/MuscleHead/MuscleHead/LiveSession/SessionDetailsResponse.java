@@ -19,6 +19,7 @@ public class SessionDetailsResponse {
     private String status;
     private Instant createdAt;
     private String hostUserName;
+    private String guestUserName;
     private List<LiveSessionExerciseDto> hostExercises;
     private List<LiveSessionExerciseDto> guestExercises;
 }

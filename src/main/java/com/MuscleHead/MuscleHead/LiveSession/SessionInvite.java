@@ -43,6 +43,11 @@ public class SessionInvite {
     @Column (name = "host_user_name", nullable = false)
     private String hostUserName;
 
+    @Column (name = "guest_user_name", nullable = false)
+    private String guestUserName;
+
+
+
     private String message;
 
     @Enumerated(EnumType.STRING)

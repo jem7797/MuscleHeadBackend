@@ -76,7 +76,7 @@ public class LiveSessionService {
             throw new IllegalStateException("Cannot send invites for a session that is not pending");
         }
 
-        userRepository.findById(toUserId)
+        User guest = userRepository.findById(toUserId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + toUserId));
 
         if (fromUserId.equals(toUserId)) {
@@ -91,6 +91,10 @@ public class LiveSessionService {
         invite.setStatus(SessionInvite.InviteStatus.pending);
         invite.setHostUserName(session.getHostUserName());
         inviteRepository.save(invite);
+
+        session.setGuestUserId(toUserId);
+        session.setGuestUserName(guest.getUsername());
+        sessionRepository.save(session);
 
         logger.info("Sent invite {} for session {} from {} to {}", invite.getId(), sessionId, fromUserId, toUserId);
     }
@@ -202,6 +206,7 @@ public class LiveSessionService {
                 session.getStatus().name(),
                 session.getCreatedAt(),
                 session.getHostUserName(),
+                session.getGuestUserName(),
                 hostExercises,
                 guestExercises);
     }
