@@ -18,5 +18,7 @@ public class PendingInviteResponse {
     private String message;
     private Instant sentAt;
     private String hostUserName;
-    private String status; 
+    /** Invitee display name at time of invite (denormalized). */
+    private String guestUserName;
+    private String status;
 }

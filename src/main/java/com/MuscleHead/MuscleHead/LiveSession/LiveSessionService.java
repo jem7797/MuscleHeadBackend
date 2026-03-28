@@ -90,6 +90,7 @@ public class LiveSessionService {
         invite.setMessage(message != null ? message : "");
         invite.setStatus(SessionInvite.InviteStatus.pending);
         invite.setHostUserName(session.getHostUserName());
+        invite.setGuestUserName(guest.getUsername() != null ? guest.getUsername() : "");
         inviteRepository.save(invite);
 
         session.setGuestUserId(toUserId);
@@ -255,6 +256,7 @@ public class LiveSessionService {
                 i.getMessage() != null ? i.getMessage() : "",
                 i.getSentAt(),
                 i.getHostUserName(),
+                i.getGuestUserName() != null ? i.getGuestUserName() : "",
                 i.getStatus() != null ? i.getStatus().name() : null);
     }
 }

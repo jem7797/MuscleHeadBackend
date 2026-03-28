@@ -29,6 +29,7 @@ The **`toUserId`** in `POST .../invite` must be the invitee’s **`sub`**. If th
 | `fromUserId` | Host’s `sub` (sender) |
 | `toUserId` | Invitee’s `sub` (recipient) |
 | `hostUserName` | Denormalized display name for the host (see below) |
+| `guestUserName` | Denormalized display name for the invitee at send time |
 | `message` | Optional note from host |
 | `status` | `pending`, `accepted`, `declined` |
 | `sentAt` | When the invite was created |
@@ -43,9 +44,11 @@ Stores **`hostUserName`** when the session is created so every invite and sessio
 
 2. **`SessionInvite.hostUserName`** — Copied in **`sendInvite`** from `session.getHostUserName()`. Invites are loaded independently of heavy session joins; storing the name on the invite row lets **`GET /invites/pending`** return a friendly label (“who invited me”) in one query.
 
+2b. **`SessionInvite.guestUserName`** — Set in **`sendInvite`** from the invited user’s `username`. Included in pending-invite JSON so clients can show who the invite is for (e.g. host-side lists) without another lookup.
+
 3. **`CreateSessionResponse.hostUserName`** — Returned to the **host** right after create so the client can show the correct label immediately without an extra `GET session`.
 
-4. **`PendingInviteResponse.hostUserName`** — JSON field for each pending invite for the **recipient**.
+4. **`PendingInviteResponse.hostUserName` / `guestUserName`** — JSON fields for each pending/unseen invite list item.
 
 5. **`SessionDetailsResponse.hostUserName`** — Included when anyone fetches session details by `sessionId`.
 
@@ -102,6 +105,7 @@ This is **denormalization**: the same logical fact (host’s display name) is du
     "message": "",
     "sentAt": "2025-03-24T12:00:00Z",
     "hostUserName": "displayName",
+    "guestUserName": "inviteeDisplayName",
     "status": "pending"
   }
 ]
@@ -156,13 +160,13 @@ Each file below is part of (or directly supports) the invite flow. Paths are rel
 | File | What it does |
 |------|----------------|
 | **`LiveSessionController.java`** | Exposes HTTP routes under `/api/live-sessions`. Reads the current user from `SecurityUtils.getCurrentUserSub()`, returns appropriate status codes, and delegates all invite/session logic to `LiveSessionService`. Does not contain business rules. |
-| **`LiveSessionService.java`** | Implements invite behavior: `createSession` (loads host user, sets `hostUserName` on the session), `sendInvite` (validates host/session/recipient, builds and saves `SessionInvite` with copied `hostUserName`), `acceptInvite` / `declineInvite` (authorization and status transitions; accept also updates the session guest and status), `getPendingInvites` (maps entities to `PendingInviteResponse`), `getSession` (builds `SessionDetailsResponse` including `hostUserName`). Uses `UserRepository`, `LiveWorkoutSessionRepository`, `SessionInviteRepository`. |
-| **`SessionInvite.java`** | JPA entity for table `session_invites`. Holds FK to `LiveWorkoutSession`, `fromUserId`, `toUserId`, denormalized `hostUserName`, `message`, `status`, `sentAt`. Defines `InviteStatus` enum (`pending`, `accepted`, `declined`). |
+| **`LiveSessionService.java`** | Implements invite behavior: `createSession` (loads host user, sets `hostUserName` on the session), `sendInvite` (validates host/session/recipient, builds and saves `SessionInvite` with `hostUserName` and `guestUserName`), `acceptInvite` / `declineInvite` (authorization and status transitions; accept also updates the session guest and status), `getPendingInvites` (maps entities to `PendingInviteResponse`), `getSession` (builds `SessionDetailsResponse` including `hostUserName`). Uses `UserRepository`, `LiveWorkoutSessionRepository`, `SessionInviteRepository`. |
+| **`SessionInvite.java`** | JPA entity for table `session_invites`. Holds FK to `LiveWorkoutSession`, `fromUserId`, `toUserId`, denormalized `hostUserName` and `guestUserName`, `message`, `status`, `sentAt`, optional toast tracking. Defines `InviteStatus` enum (`pending`, `accepted`, `declined`). |
 | **`SessionInviteRepository.java`** | Spring Data repository for `SessionInvite`. Standard `save` / `findById`; custom query `findPendingInvitesForUser(userId)` returns invites where `toUserId` matches and status is `pending`, ordered by `sentAt` descending. |
 | **`LiveWorkoutSession.java`** | JPA entity for `live_workout_sessions`. Stores `hostUserId`, optional `guestUserId`, `hostUserName`, `status`, `createdAt`. Invite flow depends on it: invites reference a session; accept sets guest and moves status to `in_progress`. |
 | **`LiveWorkoutSessionRepository.java`** | Persists and loads `LiveWorkoutSession` rows used when creating sessions, sending invites, accepting, and loading session details. |
 | **`InviteRequest.java`** | Request DTO for `POST .../{sessionId}/invite`. Validates `toUserId` as required (`@NotBlank`); optional `message`. Jackson deserializes JSON into this type. |
-| **`PendingInviteResponse.java`** | Response DTO for `GET .../invites/pending`. Defines the JSON shape: `inviteId`, `sessionId`, `fromUserId`, `message`, `sentAt`, `hostUserName`, `status`. Built in `LiveSessionService.getPendingInvites`. |
+| **`PendingInviteResponse.java`** | Response DTO for `GET .../invites/pending` and `.../pending/unseen`. Defines the JSON shape: `inviteId`, `sessionId`, `fromUserId`, `message`, `sentAt`, `hostUserName`, `guestUserName`, `status`. |
 | **`CreateSessionResponse.java`** | Response DTO for `POST .../create`. Returns `id`, `hostUserId`, `status`, `createdAt`, `hostUserName` so the host client can show the session and label without another call. |
 | **`SessionDetailsResponse.java`** | Response DTO for `GET .../{sessionId}`. Includes session metadata (`hostUserId`, `guestUserId`, `status`, `createdAt`, `hostUserName`) plus exercise lists. Used after accept (and anytime session detail is needed). |
 
