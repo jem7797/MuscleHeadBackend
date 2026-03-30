@@ -212,6 +212,23 @@ public class LiveSessionService {
                 guestExercises);
     }
 
+    public String getSessionStatusForUser(UUID sessionId, String userId) {
+        if (sessionId == null || userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("Session ID and user ID are required");
+        }
+
+        LiveWorkoutSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
+
+        boolean isHost = userId.equals(session.getHostUserId());
+        boolean isGuest = userId.equals(session.getGuestUserId());
+        if (!isHost && !isGuest) {
+            throw new LiveSessionForbiddenException("You are not a participant of this session");
+        }
+
+        return session.getStatus().name().toLowerCase();
+    }
+
     public List<PendingInviteResponse> getPendingInvites(String userId) {
         if (userId == null || userId.isBlank()) {
             throw new IllegalArgumentException("User ID is required");

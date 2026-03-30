@@ -1,6 +1,7 @@
 package com.MuscleHead.MuscleHead.LiveSession;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -89,6 +90,16 @@ public class LiveSessionController {
             }
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @GetMapping("/{sessionId}/status")
+    public ResponseEntity<Map<String, String>> getSessionStatus(@PathVariable UUID sessionId) {
+        String userId = SecurityUtils.getCurrentUserSub();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String status = liveSessionService.getSessionStatusForUser(sessionId, userId);
+        return ResponseEntity.ok(Map.of("status", status));
     }
 
     @GetMapping("/invites/pending")
