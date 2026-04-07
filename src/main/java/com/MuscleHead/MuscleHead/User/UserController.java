@@ -145,6 +145,20 @@ public class UserController {
         return ResponseEntity.notFound().build();
     }
 
+    @DeleteMapping("me")
+    public ResponseEntity<Void> deleteCurrentUser() {
+        String subId = SecurityUtils.getCurrentUserSub();
+        if (subId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        logger.info("Deleting current authenticated user with sub_id: {}", subId);
+        if (userService.deleteCurrentUser(subId)) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
     @GetMapping("me")
     public ResponseEntity<User> getCurrentUser() {
         String subId = SecurityUtils.getCurrentUserSub();

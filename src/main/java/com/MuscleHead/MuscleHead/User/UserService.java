@@ -310,6 +310,15 @@ public class UserService {
         return true;
     }
 
+    @Transactional
+    public boolean deleteCurrentUser(String currentUserSubId) {
+        if (currentUserSubId == null || currentUserSubId.isBlank()) {
+            logger.warn("Attempted to delete current user with null or blank auth sub_id");
+            return false;
+        }
+        return deleteUserById(currentUserSubId);
+    }
+
     /**
      * Removes a specific nemesis from a user's nemesis list.
      * @return true if the nemesis was found and removed, false otherwise
