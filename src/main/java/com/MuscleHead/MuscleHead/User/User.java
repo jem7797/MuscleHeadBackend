@@ -77,6 +77,9 @@ public class User {
     private boolean stat_tracking = true;
     private String privacy_setting = "public";
 
+    @Column(name = "agreed_to_terms", nullable = false)
+    private boolean agreedToTerms = false;
+
     @PositiveOrZero(message = "Lifetime weight lifted cannot be negative")
     private double lifetime_weight_lifted = 0;
 

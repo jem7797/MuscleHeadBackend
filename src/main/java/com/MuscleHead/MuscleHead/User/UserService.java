@@ -191,6 +191,9 @@ public class UserService {
                     if (request.getPrivacy_setting() != null) {
                         existingUser.setPrivacy_setting(request.getPrivacy_setting());
                     }
+                    if (request.getAgreedToTerms() != null) {
+                        existingUser.setAgreedToTerms(request.getAgreedToTerms());
+                    }
                     if (request.getProfilePicUrl() != null) {
                         String newKey = request.getProfilePicUrl();
                         existingUser.setProfilePicUrl(newKey);
@@ -256,6 +259,7 @@ public class UserService {
                     existingUser.setStat_tracking(updatedUser.isStat_tracking());
                     existingUser.setNattyStatus(updatedUser.isNattyStatus());
                     existingUser.setPrivacy_setting(updatedUser.getPrivacy_setting());
+                    existingUser.setAgreedToTerms(updatedUser.isAgreedToTerms());
                     existingUser.setLifetime_weight_lifted(updatedUser.getLifetime_weight_lifted());
                     existingUser.setHighest_weight_lifted(updatedUser.getHighest_weight_lifted());
                     existingUser.setLifetime_gym_time(updatedUser.getLifetime_gym_time());

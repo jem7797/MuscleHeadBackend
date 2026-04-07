@@ -24,6 +24,7 @@ public class UpdateUserRequest {
     private Boolean show_height;
     private Boolean stat_tracking;
     private String privacy_setting;
+    private Boolean agreedToTerms;
     private String profilePicUrl;
     private Boolean nattyStatus;
     private String bio;
