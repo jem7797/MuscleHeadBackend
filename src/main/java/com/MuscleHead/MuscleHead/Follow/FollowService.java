@@ -86,7 +86,6 @@ public class FollowService {
         }
 
         createFollowAndNotify(follower, followee, followerSubId, followeeSubId);
-        logger.info("User {} followed user {}", followerSubId, followeeSubId);
     }
 
     private boolean isPrivate(User user) {
@@ -120,7 +119,6 @@ public class FollowService {
         request.setFollowee(followee);
         request.setStatus(FollowRequest.RequestStatus.pending);
         followRequestRepository.save(request);
-        logger.info("User {} requested to follow user {}", requesterSubId, followeeSubId);
     }
 
     public List<FollowRequestResponse> getPendingRequests(String followeeSubId) {
@@ -147,7 +145,6 @@ public class FollowService {
         createFollowAndNotify(request.getRequester(), request.getFollowee(), requesterSubId, followeeSubId);
         invalidateFollowListsCache(requesterSubId, followeeSubId);
         invalidateIsFollowingCache(requesterSubId, followeeSubId);
-        logger.info("User {} accepted follow request from {}", followeeSubId, requesterSubId);
     }
 
     @Transactional
@@ -162,7 +159,6 @@ public class FollowService {
         }
         request.setStatus(FollowRequest.RequestStatus.declined);
         followRequestRepository.save(request);
-        logger.info("User {} declined follow request from {}", followeeSubId, request.getRequester().getSub_id());
     }
 
     public String getRequestStatus(String requesterSubId, String followeeSubId) {
@@ -231,8 +227,6 @@ public class FollowService {
         invalidateMutualCacheForUser(followeeSubId);
         invalidateFollowListsCache(followerSubId, followeeSubId);
         invalidateIsFollowingCache(followerSubId, followeeSubId);
-
-        logger.info("User {} unfollowed user {}", followerSubId, followeeSubId);
     }
 
     public List<UserSummary> getFollowers(String subId) {
@@ -240,7 +234,6 @@ public class FollowService {
         String cached = redisService.get(cacheKey);
         if (cached != null && !cached.isBlank()) {
             try {
-                logger.debug("Followers for {} served from cache", subId);
                 return objectMapper.readValue(cached, new TypeReference<List<UserSummary>>() {});
             } catch (JsonProcessingException e) {
                 logger.warn("Failed to parse cached followers for {}: {}", subId, e.getMessage());
@@ -265,7 +258,6 @@ public class FollowService {
         String cached = redisService.get(cacheKey);
         if (cached != null && !cached.isBlank()) {
             try {
-                logger.debug("Following for {} served from cache", subId);
                 return objectMapper.readValue(cached, new TypeReference<List<UserSummary>>() {});
             } catch (JsonProcessingException e) {
                 logger.warn("Failed to parse cached following for {}: {}", subId, e.getMessage());

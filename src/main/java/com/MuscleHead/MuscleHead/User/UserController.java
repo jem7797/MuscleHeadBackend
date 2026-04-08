@@ -1,8 +1,5 @@
 package com.MuscleHead.MuscleHead.User;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,15 +41,11 @@ public class UserController {
     private UserService userService;
 
     @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
     private S3Service s3Service;
 
     @PostMapping("minor-signup-attempt")
     public ResponseEntity<Void> recordMinorSignupAttempt(
             @Valid @RequestBody MinorSignupAttemptRequest request) {
-        logger.info("Recording minor signup attempt for email: {}", request.getEmail());
         userService.recordMinorSignupAttempt(request);
         return ResponseEntity.noContent().build();
     }
@@ -62,19 +55,13 @@ public class UserController {
         @Validated({OnCreate.class, Default.class}) 
         @RequestBody User user
     ) {
-        logger.info("Creating new user with sub_id: {}", user.getSub_id());
-        
         try {
             User createdUser = userService.createNewUser(user);
             enrichProfilePicUrl(createdUser);
-            logger.info("Successfully created user with sub_id: {}", createdUser.getSub_id());
             return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
         } catch (IllegalStateException ex) {
             logger.warn("Failed to create user - user already exists: {}", user.getSub_id());
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
-        } catch (Exception ex) {
-            logger.error("Error creating user with sub_id: {}", user.getSub_id(), ex);
-            throw ex;
         }
     }
 
@@ -82,13 +69,9 @@ public class UserController {
     public ResponseEntity<User> partialUpdateUser(
             @PathVariable String subId,
             @Valid @RequestBody UpdateUserRequest request) {
-        logger.info("Partial update for user with sub_id: {}", subId);
-
         return userService.partialUpdate(subId, request)
                 .map(updatedUser -> {
                     enrichProfilePicUrl(updatedUser);
-                    logger.info("Successfully partially updated user with sub_id: {} | profilePicUrl={}",
-                            subId, updatedUser.getProfilePicUrl());
                     return ResponseEntity.ok(updatedUser);
                 })
                 .orElseGet(() -> {
@@ -103,14 +86,11 @@ public class UserController {
             @Validated({OnUpdate.class, Default.class}) 
             @RequestBody User user
         ) {
-        logger.info("Updating user with sub_id: {}", subId);
-
         user.setSub_id(subId);
 
         return userService.updateUser(user)
                 .map(updatedUser -> {
                     enrichProfilePicUrl(updatedUser);
-                    logger.info("Successfully updated user with sub_id: {} | profilePicUrl={}", subId, updatedUser.getProfilePicUrl());
                     return ResponseEntity.ok(updatedUser);
                 })
                 .orElseGet(() -> {
@@ -133,11 +113,7 @@ public class UserController {
     public ResponseEntity<Void> deleteUser(
         @PathVariable String subId 
     ) {
-        logger.info("Deleting user with sub_id: {}", subId);
-       
         if (userService.deleteUserById(subId)) {
-            logger.info("Successfully deleted user with sub_id: {}", subId);
-            
             return ResponseEntity.noContent().build();
         }
         logger.warn("User not found for deletion: sub_id: {}", subId);
@@ -152,7 +128,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        logger.info("Deleting current authenticated user with sub_id: {}", subId);
         if (userService.deleteCurrentUser(subId)) {
             return ResponseEntity.noContent().build();
         }
@@ -168,7 +143,6 @@ public class UserController {
         return userService.getUserById(subId)
                 .map(user -> {
                     enrichProfilePicUrl(user);
-                    logUserSentToFrontend(user, "me", subId);
                     return ResponseEntity.ok(user);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
@@ -180,12 +154,9 @@ public class UserController {
         @RequestParam(required = false) String subId
         ) {
         if (subId != null && !subId.isBlank()) {
-            logger.debug("Getting user by sub_id: {}", subId);
-            
             return userService.getUserById(subId)
                     .map(user -> {
                         enrichProfilePicUrl(user);
-                        logUserSentToFrontend(user, "subId", subId);
                         return ResponseEntity.ok(user);
                     })
                     .orElseGet(() -> {
@@ -195,12 +166,9 @@ public class UserController {
 
         }
         if (username != null && !username.isBlank()) {
-            logger.debug("Getting user by username: {}", username);
-            
             return userService.getUserByUsername(username)
                     .map(user -> {
                         enrichProfilePicUrl(user);
-                        logUserSentToFrontend(user, "username", username);
                         return ResponseEntity.ok(user);
                     })
                     .orElseGet(() -> {
@@ -216,21 +184,16 @@ public class UserController {
     public ResponseEntity<Page<User>> searchUsers(
             @RequestParam(required = false) String q,
             @PageableDefault(size = 10) Pageable pageable) {
-        logger.info("[SEARCH] Request received | q={} | page={} | size={}", q, pageable.getPageNumber(), pageable.getPageSize());
-
-        // Always return valid JSON: empty page for missing/short query, results otherwise
         if (q == null || q.isBlank() || q.trim().length() < 2) {
             Page<User> emptyPage = new PageImpl<>(
                     java.util.Collections.emptyList(),
                     PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort()),
                     0);
-            logSearchResponse("empty (query too short/missing)", emptyPage);
             return ResponseEntity.ok(emptyPage);
         }
         try {
             Page<User> results = userService.searchUsers(q.trim(), pageable);
             results.getContent().forEach(this::enrichProfilePicUrl);
-            logSearchResponse("success", results);
             return ResponseEntity.ok(results);
         } catch (Exception ex) {
             logger.warn("[SEARCH] Failed for q={}: {}", q, ex.getMessage());
@@ -238,19 +201,7 @@ public class UserController {
                     java.util.Collections.emptyList(),
                     PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort()),
                     0);
-            logSearchResponse("empty (exception)", emptyPage);
             return ResponseEntity.ok(emptyPage);
-        }
-    }
-
-    private void logSearchResponse(String outcome, Page<User> page) {
-        try {
-            String json = objectMapper.writeValueAsString(page);
-            logger.info("[SEARCH] Returning {} | contentSize={} | totalElements={} | responseLength={} | responsePreview={}",
-                    outcome, page.getContent().size(), page.getTotalElements(), json.length(),
-                    json.length() > 200 ? json.substring(0, 200) + "..." : json);
-        } catch (Exception e) {
-            logger.warn("[SEARCH] Could not serialize response for logging: {}", e.getMessage());
         }
     }
 
@@ -265,19 +216,8 @@ public class UserController {
         try {
             String presignedUrl = s3Service.generatePresignedDownloadUrl(key);
             user.setProfilePicUrl(presignedUrl);
-            logger.debug("[PROFILE-PIC] Enriched key {} -> presigned URL for user {}", key, user.getSub_id());
         } catch (Exception e) {
             logger.warn("[PROFILE-PIC] Failed to generate presigned URL for key {}: {}", key, e.getMessage());
-        }
-    }
-
-    /** Logs the full user object as sent to the frontend (same JSON shape). */
-    private void logUserSentToFrontend(User user, String lookupType, String lookupValue) {
-        try {
-            String json = objectMapper.writeValueAsString(user);
-            logger.info("[User sent to frontend] lookup by {}={} | user: {}", lookupType, lookupValue, json);
-        } catch (JsonProcessingException e) {
-            logger.warn("Could not serialize user for logging: {}", e.getMessage());
         }
     }
 }

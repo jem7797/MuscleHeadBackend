@@ -13,8 +13,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.time.ZonedDateTime;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,8 +30,6 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class MedalService {
-
-    private static final Logger logger = LoggerFactory.getLogger(MedalService.class);
 
     private static final int GYM_RAT_HOURS = 24;
     private static final int SAME_TIME_DAYS = 5;
@@ -350,7 +346,6 @@ public class MedalService {
         medal.setMedalName(medalName);
         userMedalRepository.save(medal);
         notificationService.createMedalNotification(user, medal, message);
-        logger.info("Awarded medal {} to user {}", medalName, user.getSub_id());
         if (newlyAwarded != null) {
             newlyAwarded.add(toResponse(medal));
         }

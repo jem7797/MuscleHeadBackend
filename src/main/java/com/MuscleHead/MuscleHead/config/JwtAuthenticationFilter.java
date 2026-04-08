@@ -57,18 +57,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                         // Set authentication in security context
                         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                        logger.debug("Successfully authenticated user with sub: {}", subject);
-                    } else {
-                        logger.warn("Token validated but subject is null");
                     }
-                } else {
-                    logger.warn("Token validation failed for request: {}", request.getRequestURI());
                 }
             }
 
         } catch (Exception e) {
-            logger.error("Error processing JWT authentication", e);
+            logger.warn("JWT filter error: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
 

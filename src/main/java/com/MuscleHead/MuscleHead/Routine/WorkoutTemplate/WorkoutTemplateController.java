@@ -40,44 +40,28 @@ public class WorkoutTemplateController {
     @PostMapping
     public ResponseEntity<WorkoutTemplateResponse> createWorkoutTemplate(
             @Valid @RequestBody WorkoutTemplateRequest request) {
-        logger.info("Creating new workout template: {}", request.getName());
-
-        // Resolve authenticated user
         String subId = SecurityUtils.getCurrentUserSub();
         if (subId == null) {
-            logger.error("Attempted to create workout template without authentication");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         User user = userRepository.findById(subId)
-                .orElseThrow(() -> {
-                    logger.error("User not found with sub_id: {}", subId);
-                    return new RuntimeException("User not found: " + subId);
-                });
+                .orElseThrow(() -> new RuntimeException("User not found: " + subId));
 
         try {
             WorkoutTemplate createdWorkoutTemplate = workoutTemplate.createWorkoutTemplate(user, request);
-            logger.info("Successfully created workout template with id: {} for user: {}",
-                    createdWorkoutTemplate.getId(), subId);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new WorkoutTemplateResponse(createdWorkoutTemplate.getId()));
         } catch (IllegalArgumentException ex) {
             logger.warn("Failed to create workout template: {}", ex.getMessage());
-            throw ex;
-        } catch (Exception ex) {
-            logger.error("Error creating workout template: {}", request.getName(), ex);
             throw ex;
         }
     }
 
     @GetMapping("/{workoutTemplateId}")
     public ResponseEntity<WorkoutTemplate> getWorkoutTemplateById(@PathVariable Long workoutTemplateId) {
-        logger.debug("Getting workout template by id: {}", workoutTemplateId);
         return workoutTemplate.getWorkoutTemplateById(workoutTemplateId)
-                .map(workoutTemplate -> {
-                    logger.debug("Found workout template with id: {}", workoutTemplateId);
-                    return ResponseEntity.ok(workoutTemplate);
-                })
+                .map(ResponseEntity::ok)
                 .orElseGet(() -> {
                     logger.warn("Workout template not found with id: {}", workoutTemplateId);
                     return ResponseEntity.notFound().build();
@@ -87,11 +71,9 @@ public class WorkoutTemplateController {
     @GetMapping
     public ResponseEntity<List<WorkoutTemplate>> getWorkoutTemplate(@RequestParam(required = false) String subId) {
         if (subId != null && !subId.isBlank()) {
-            logger.debug("Getting routines for user with sub_id: {}", subId);
             List<WorkoutTemplate> workoutTemplates = workoutTemplate.getWorkoutTemplateByUserSubId(subId);
             return ResponseEntity.ok(workoutTemplates);
         }
-        logger.debug("Getting all routines");
         List<WorkoutTemplate> routines = workoutTemplate.getAllWorkoutTemplate();
         return ResponseEntity.ok(routines);
     }
@@ -100,13 +82,9 @@ public class WorkoutTemplateController {
     public ResponseEntity<WorkoutTemplate> updateWorkoutTemplate(
             @PathVariable Long workoutTemplateId,
             @Valid @RequestBody WorkoutTemplate workoutTemplate) {
-        logger.info("Updating workout template with id: {}", workoutTemplateId);
         workoutTemplate.setId(workoutTemplateId);
         return this.workoutTemplate.updateWorkoutTemplate(workoutTemplate)
-                .map(updatedWorkoutTemplate -> {
-                    logger.info("Successfully updated workout template with id: {}", workoutTemplateId);
-                    return ResponseEntity.ok(updatedWorkoutTemplate);
-                })
+                .map(ResponseEntity::ok)
                 .orElseGet(() -> {
                     logger.warn("Workout template not found for update: id: {}", workoutTemplateId);
                     return ResponseEntity.notFound().build();
@@ -125,9 +103,7 @@ public class WorkoutTemplateController {
 
     @DeleteMapping("/{workoutTemplateId}")
     public ResponseEntity<Void> deleteWorkoutTemplate(@PathVariable Long workoutTemplateId) {
-        logger.info("Deleting workout template with id: {}", workoutTemplateId);
         if (workoutTemplate.deleteWorkoutTemplate(workoutTemplateId)) {
-            logger.info("Successfully deleted workout template with id: {}", workoutTemplateId);
             return ResponseEntity.noContent().build();
         }
         logger.warn("Workout template not found for deletion: id: {}", workoutTemplateId);

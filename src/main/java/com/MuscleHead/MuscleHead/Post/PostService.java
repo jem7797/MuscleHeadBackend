@@ -97,7 +97,6 @@ public class PostService {
         // 1. Check cache first
         String cached = redisService.get(cacheKey);
         if (cached != null && !cached.isBlank()) {
-            logger.debug("Post {} served from cache", postId);
             PostResponse resp = parsePostResponse(cached);
             enrichWithImageUrl(resp);
             return resp;
@@ -113,7 +112,6 @@ public class PostService {
         try {
             String json = objectMapper.writeValueAsString(response);
             redisService.setWithTtl(cacheKey, json, cacheTtlSeconds);
-            logger.debug("Post {} cached", postId);
         } catch (JsonProcessingException e) {
             logger.warn("Failed to cache post {}: {}", postId, e.getMessage());
         }
@@ -168,7 +166,6 @@ public class PostService {
         cachePostResponse(response);
         invalidateFeedCacheForUser(user.getSub_id());
         enrichWithImageUrl(response);
-        logger.info("Post {} created and cached", saved.getPostId());
         return response;
     }
 
@@ -191,7 +188,6 @@ public class PostService {
         postRepository.delete(post);
         redisService.delete(POST_CACHE_PREFIX + postId);
         invalidateFeedCacheForUser(author.getSub_id());
-        logger.info("Post {} deleted", postId);
     }
 
     /**
@@ -247,7 +243,6 @@ public class PostService {
         PostResponse response = PostResponse.from(postWithAchievement);
         cachePostResponse(response);
         enrichWithImageUrl(response);
-        logger.info("Post {} patched (like={}, comment={})", postId, request.getLike(), request.getComment() != null);
         return response;
     }
 
@@ -279,7 +274,6 @@ public class PostService {
         String cacheKey = FOLLOWING_CACHE_PREFIX + followerSubId;
         String cached = redisService.get(cacheKey);
         if (cached != null && !cached.isBlank()) {
-            logger.debug("Followed sub_ids for {} served from cache", followerSubId);
             return parseStringList(cached);
         }
 
@@ -287,7 +281,6 @@ public class PostService {
         try {
             String json = objectMapper.writeValueAsString(followeeSubIds);
             redisService.setWithTtl(cacheKey, json, followingCacheTtlSeconds);
-            logger.debug("Followed sub_ids for {} cached ({} users)", followerSubId, followeeSubIds.size());
         } catch (JsonProcessingException e) {
             logger.warn("Failed to cache followed sub_ids for {}: {}", followerSubId, e.getMessage());
         }
@@ -309,7 +302,6 @@ public class PostService {
                 FeedPageCache cache = objectMapper.readValue(cached, FeedPageCache.class);
                 Page<PostResponse> page = cache.toPage(pageable);
                 page.forEach(this::enrichWithImageUrl);
-                logger.debug("Feed for {} served from cache (page {})", followerSubId, pageable.getPageNumber());
                 return page;
             } catch (JsonProcessingException e) {
                 logger.warn("Failed to parse cached feed for {}: {}", followerSubId, e.getMessage());
@@ -337,7 +329,6 @@ public class PostService {
             FeedPageCache cache = FeedPageCache.from(page);
             String json = objectMapper.writeValueAsString(cache);
             redisService.setWithTtl(cacheKey, json, feedCacheTtlSeconds);
-            logger.debug("Feed for {} cached (page {})", followerSubId, pageable.getPageNumber());
         } catch (JsonProcessingException e) {
             logger.warn("Failed to cache feed for {}: {}", followerSubId, e.getMessage());
         }
@@ -351,7 +342,6 @@ public class PostService {
     public void invalidateFeedCacheForUser(String subId) {
         if (subId == null || subId.isBlank()) return;
         redisService.deleteKeysByPattern(FEED_CACHE_PREFIX + subId + ":*");
-        logger.debug("Invalidated feed cache for user {}", subId);
     }
 
     /**
@@ -387,7 +377,7 @@ public class PostService {
         try {
             return objectMapper.readValue(json, new TypeReference<List<String>>() {});
         } catch (JsonProcessingException e) {
-            logger.error("Failed to parse cached following list: {}", e.getMessage());
+            logger.warn("Failed to parse cached following list: {}", e.getMessage());
             throw new RuntimeException("Cache data corrupted", e);
         }
     }
@@ -406,7 +396,7 @@ public class PostService {
         try {
             return objectMapper.readValue(json, PostResponse.class);
         } catch (JsonProcessingException e) {
-            logger.error("Failed to parse cached post: {}", e.getMessage());
+            logger.warn("Failed to parse cached post: {}", e.getMessage());
             throw new RuntimeException("Cache data corrupted", e);
         }
     }

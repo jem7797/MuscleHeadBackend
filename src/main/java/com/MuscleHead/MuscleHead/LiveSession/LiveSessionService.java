@@ -5,8 +5,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.time.Instant;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,8 +16,6 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class LiveSessionService {
-
-    private static final Logger logger = LoggerFactory.getLogger(LiveSessionService.class);
 
     @Autowired
     private LiveWorkoutSessionRepository sessionRepository;
@@ -47,8 +43,6 @@ public class LiveSessionService {
         session.setStatus(LiveWorkoutSession.SessionStatus.PENDING);
         session.setHostUserName(host.getUsername());
         session = sessionRepository.save(session);
-
-        logger.info("Created live workout session {} for host {}", session.getId(), hostUserId);
 
         return new CreateSessionResponse(
                 session.getId(),
@@ -96,8 +90,6 @@ public class LiveSessionService {
         session.setGuestUserId(toUserId);
         session.setGuestUserName(guest.getUsername());
         sessionRepository.save(session);
-
-        logger.info("Sent invite {} for session {} from {} to {}", invite.getId(), sessionId, fromUserId, toUserId);
     }
 
     @Transactional
@@ -128,8 +120,6 @@ public class LiveSessionService {
         session.setGuestUserId(userId);
         session.setStatus(LiveWorkoutSession.SessionStatus.in_progress);
         sessionRepository.save(session);
-
-        logger.info("User {} accepted invite {} for session {}", userId, inviteId, session.getId());
     }
 
     @Transactional
@@ -151,8 +141,6 @@ public class LiveSessionService {
 
         invite.setStatus(SessionInvite.InviteStatus.declined);
         inviteRepository.save(invite);
-
-        logger.info("User {} declined invite {} for session {}", userId, inviteId, invite.getSession().getId());
     }
 
     @Transactional
@@ -174,8 +162,6 @@ public class LiveSessionService {
 
         session.setStatus(LiveWorkoutSession.SessionStatus.ENDED);
         sessionRepository.save(session);
-
-        logger.info("User {} ended session {}", userId, sessionId);
     }
 
     public SessionDetailsResponse getSession(UUID sessionId) {

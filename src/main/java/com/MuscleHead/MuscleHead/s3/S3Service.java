@@ -77,13 +77,9 @@ public class S3Service {
                     .putObjectRequest(putRequest)
                     .build();
 
-            String url = presigner.presignPutObject(presignRequest).url().toExternalForm();
-            logger.info("[S3 UPLOAD] Generated presigned URL | bucket={} | key={} | contentType={} | client MUST use this exact Content-Type when PUTting",
-                    uploadBucketName, objectKey, effectiveContentType);
-            return url;
+            return presigner.presignPutObject(presignRequest).url().toExternalForm();
         } catch (Exception e) {
-            String causeMsg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-            logger.error("Failed to generate presigned upload URL for key: {} - Cause: {}", objectKey, causeMsg, e);
+            logger.warn("Failed to generate presigned upload URL for key {}: {}", objectKey, e.getMessage());
             throw new RuntimeException("Failed to generate upload URL", e);
         }
     }
@@ -108,12 +104,9 @@ public class S3Service {
                     .getObjectRequest(getRequest)
                     .build();
 
-            String url = presigner.presignGetObject(presignRequest).url().toExternalForm();
-            logger.info("[S3 DOWNLOAD] Generated presigned URL | bucket={} | key={}", bucketName, objectKey);
-            return url;
+            return presigner.presignGetObject(presignRequest).url().toExternalForm();
         } catch (Exception e) {
-            String causeMsg = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-            logger.error("Failed to generate presigned download URL for key: {} - Cause: {}", objectKey, causeMsg, e);
+            logger.warn("Failed to generate presigned download URL for key {}: {}", objectKey, e.getMessage());
             throw new RuntimeException("Failed to generate download URL", e);
         }
     }

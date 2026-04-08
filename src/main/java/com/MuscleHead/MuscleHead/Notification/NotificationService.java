@@ -79,7 +79,6 @@ public class NotificationService {
         if (cached != null && !cached.isBlank()) {
             try {
                 NotificationPageCache cache = objectMapper.readValue(cached, NotificationPageCache.class);
-                logger.debug("Notifications for {} served from cache (page {})", subId, pageable.getPageNumber());
                 return cache.toPage(pageable);
             } catch (JsonProcessingException e) {
                 logger.warn("Failed to parse cached notifications for {}: {}", subId, e.getMessage());
@@ -93,7 +92,6 @@ public class NotificationService {
             NotificationPageCache cache = NotificationPageCache.from(page);
             String json = objectMapper.writeValueAsString(cache);
             redisService.setWithTtl(cacheKey, json, cacheTtlSeconds);
-            logger.debug("Notifications for {} cached (page {})", subId, pageable.getPageNumber());
         } catch (JsonProcessingException e) {
             logger.warn("Failed to cache notifications for {}: {}", subId, e.getMessage());
         }
@@ -123,7 +121,6 @@ public class NotificationService {
 
     private void invalidateCacheForUser(String subId) {
         redisService.deleteKeysByPattern(CACHE_PREFIX + subId + ":*");
-        logger.debug("Invalidated notification cache for user {}", subId);
     }
 
     private NotificationResponse toResponse(Notification n) {

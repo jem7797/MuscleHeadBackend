@@ -55,15 +55,11 @@ public class SessionLogService {
 
     @Transactional
     public CreateSessionLogResult createSessionLog(User user, SessionLogRequest request) {
-        logger.debug("Creating new session log for user: {}", user != null ? user.getSub_id() : "null");
-        
         if (user == null || user.getSub_id() == null) {
-            logger.error("Attempted to create session log with null user or sub_id");
             throw new IllegalArgumentException("User is required");
         }
         
         if (request == null || request.getExercises() == null || request.getExercises().isEmpty()) {
-            logger.error("Attempted to create session log with null or empty exercises list");
             throw new IllegalArgumentException("Exercises list is required and cannot be empty");
         }
 
@@ -144,18 +140,12 @@ public class SessionLogService {
         userService.levelUp(user);
         List<MedalResponse> newlyAwarded = medalService.checkAndAwardMedals(user, savedSessionLog);
 
-        logger.info("Session log created successfully with id: {} for user: {} with {} exercises",
-                savedSessionLog.getId(), savedSessionLog.getUser().getSub_id(), sessionInstances.size());
-
         return new CreateSessionLogResult(savedSessionLog, newlyAwarded);
     }
 
     @Transactional
     public SessionLog createNewSessionLog(SessionLog sessionLog) {
-        logger.debug("Creating new session log for user: {}",
-                sessionLog != null && sessionLog.getUser() != null ? sessionLog.getUser().getSub_id() : "null");
         if (sessionLog == null || sessionLog.getUser() == null || sessionLog.getUser().getSub_id() == null) {
-            logger.error("Attempted to create session log with null session log, user, or sub_id");
             throw new IllegalArgumentException("Error creating new session log");
         }
         SessionLog savedSessionLog = sessionLogRepository.save(sessionLog);
@@ -173,8 +163,6 @@ public class SessionLogService {
         userService.levelUp(user);
         medalService.checkAndAwardMedals(user, savedSessionLog);
 
-        logger.info("Session log created successfully with id: {} for user: {}",
-                savedSessionLog.getId(), savedSessionLog.getUser().getSub_id());
         return savedSessionLog;
     }
 
@@ -192,7 +180,6 @@ public class SessionLogService {
 
     @Transactional
     public boolean deleteSessionLogById(long sessionLogId) {
-        logger.debug("Deleting session log with id: {}", sessionLogId);
         if (sessionLogId == 0) {
             logger.warn("Attempted to delete session log with invalid id: 0");
             return false;
@@ -202,7 +189,6 @@ public class SessionLogService {
                     User user = sessionLog.getUser();
                     sessionLogRepository.delete(sessionLog);
                     medalService.checkDeleteMedal(user);
-                    logger.info("Session log deleted successfully with id: {}", sessionLogId);
                     return true;
                 })
                 .orElseGet(() -> {
@@ -235,15 +221,12 @@ public class SessionLogService {
 
     @Transactional
     public Optional<SessionLog> updateSessionLogById(long sessionLogId, SessionLog updatedSessionLog) {
-        logger.debug("Updating session log with id: {}", sessionLogId);
         if (updatedSessionLog == null) {
-            logger.error("Attempted to update session log with null session log object");
             return Optional.empty();
         }
 
         return sessionLogRepository.findById(sessionLogId)
                 .map(existingSessionLog -> {
-                    logger.debug("Found existing session log, updating fields for id: {}", sessionLogId);
                     existingSessionLog.setNotes(updatedSessionLog.getNotes());
                     existingSessionLog.setRoutine(updatedSessionLog.getRoutine());
                     existingSessionLog.setTotal_weight_lifted(updatedSessionLog.getTotal_weight_lifted());
@@ -252,19 +235,13 @@ public class SessionLogService {
                     existingSessionLog.setTimeSpentInGym(updatedSessionLog.getTimeSpentInGym());
                     existingSessionLog.setUser(updatedSessionLog.getUser());
 
-                    SessionLog savedSessionLog = sessionLogRepository.save(existingSessionLog);
-                    logger.info("Session log updated successfully with id: {}", sessionLogId);
-                    return savedSessionLog;
+                    return sessionLogRepository.save(existingSessionLog);
                 });
     }
 
     public SessionLog getSessionLogById(long sessionLogId) {
-        logger.debug("Getting session log by id: {}", sessionLogId);
         return sessionLogRepository.findById(sessionLogId)
-                .orElseThrow(() -> {
-                    logger.warn("Session log not found with id: {}", sessionLogId);
-                    return new RuntimeException("Session log not found: " + sessionLogId);
-                });
+                .orElseThrow(() -> new RuntimeException("Session log not found: " + sessionLogId));
     }
 
     public List<SessionLog> getSessionLogsByUserId(String subId) {
@@ -275,16 +252,10 @@ public class SessionLogService {
     }
 
     public Page<SessionLog> getSessionLogsByUserId(String subId, Pageable pageable) {
-        logger.debug("Getting session logs for user: {} with page: {}, size: {}",
-                subId, pageable.getPageNumber(), pageable.getPageSize());
         if (subId == null || subId.isBlank()) {
-            logger.error("Attempted to get session logs with null or blank sub_id");
             throw new IllegalArgumentException("User id must not be blank");
         }
-        Page<SessionLog> sessionLogs = sessionLogRepository.findByUser_SubId(subId, pageable);
-        logger.debug("Found {} session logs for user: {} (total: {})",
-                sessionLogs.getNumberOfElements(), subId, sessionLogs.getTotalElements());
-        return sessionLogs;
+        return sessionLogRepository.findByUser_SubId(subId, pageable);
     }
 
     /**
@@ -299,7 +270,6 @@ public class SessionLogService {
         if (stored == null || maxFromInstances > stored) {
             sessionLog.setSession_highest_lift(maxFromInstances);
             sessionLogRepository.save(sessionLog);
-            logger.debug("Stored max lift {} for session {}", maxFromInstances, sessionLogId);
         }
         return stored != null && stored > maxFromInstances ? stored : maxFromInstances;
     }
@@ -321,7 +291,6 @@ public class SessionLogService {
                 updated++;
             }
         }
-        logger.info("Synced max lifts for {} workouts ({} updated) for user {}", sessions.size(), updated, subId);
         return updated;
     }
 }

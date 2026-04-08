@@ -117,15 +117,12 @@ public class WorkedMusclesService {
             if (ex.getExerciseId() == null)
                 continue;
             movementRepository.findById(ex.getExerciseId()).ifPresent(movement -> {
-                logger.info("[WorkedMuscles] user={} exerciseId={} exercise=\"{}\" areaOfActivation=\"{}\"",
-                        userId, ex.getExerciseId(), movement.getName(), movement.getAreaOfActivation());
                 Set<String> canonical = rawAreasToCanonical(movement.getAreaOfActivation());
                 canonicalFromSession.addAll(canonical);
             });
         }
 
         if (canonicalFromSession.isEmpty()) {
-            logger.debug("No canonical muscle groups from exercises for user {}", userId);
             return;
         }
 
@@ -136,7 +133,6 @@ public class WorkedMusclesService {
         }
 
         bustCache(userId);
-        logger.debug("Upserted worked muscles for user {}: {} (expires in {} hours)", userId, canonicalFromSession, expiryHours);
     }
 
     /**
@@ -199,7 +195,6 @@ public class WorkedMusclesService {
 
     private Set<String> rawAreasToCanonical(String areaOfActivation) {
         Set<String> result = new HashSet<>();
-        logger.debug("areaOfActivation raw value: {}", areaOfActivation);
         if (areaOfActivation == null || areaOfActivation.isBlank())
             return result;
 
@@ -216,7 +211,6 @@ public class WorkedMusclesService {
         for (int i = 0; i < tokens.length; i++) {
             tokens[i] = tokens[i].trim();
         }
-        logger.debug("parsed tokens: {}", java.util.Arrays.asList(tokens));
         for (String token : tokens) {
             if (token.isBlank()) continue;
             String normalized = token.toLowerCase();
@@ -224,14 +218,12 @@ public class WorkedMusclesService {
                 result.add(RAW_TO_CANONICAL.get(normalized));
             }
         }
-        logger.debug("canonical groups: {}", result);
         return result;
     }
 
     private void bustCache(String userId) {
         try {
             redisService.delete(CACHE_PREFIX + userId);
-            logger.debug("Busted worked muscles cache for user {}", userId);
         } catch (Exception e) {
             logger.warn("Failed to bust worked muscles cache for {}: {}", userId, e.getMessage());
         }
@@ -251,10 +243,6 @@ public class WorkedMusclesService {
      */
     @Transactional
     public int deleteExpiredRows() {
-        int deleted = repository.deleteExpiredRows();
-        if (deleted > 0) {
-            logger.info("Deleted {} expired worked_muscles rows", deleted);
-        }
-        return deleted;
+        return repository.deleteExpiredRows();
     }
 }

@@ -1,7 +1,5 @@
 package com.MuscleHead.MuscleHead.Workout.WorkoutSchedule;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,8 +20,6 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("workoutSchedule/api/")
 public class WorkoutScheduleController {
-
-    private static final Logger logger = LoggerFactory.getLogger(WorkoutScheduleController.class);
 
     @Autowired
     private WorkoutScheduleService workoutScheduleService;
@@ -47,7 +43,6 @@ public class WorkoutScheduleController {
     public ResponseEntity<WorkoutSchedule> createWorkoutSchedule(@Valid @RequestBody WorkoutScheduleRequest request) {
         String subId = SecurityUtils.getCurrentUserSub();
         if (subId == null) {
-            logger.error("Attempted to create workout schedule without authentication");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
@@ -64,7 +59,6 @@ public class WorkoutScheduleController {
             @Valid @RequestBody WorkoutSchedulePatchRequest request) {
         String subId = SecurityUtils.getCurrentUserSub();
         if (subId == null) {
-            logger.error("Attempted to patch workout schedule without authentication");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 

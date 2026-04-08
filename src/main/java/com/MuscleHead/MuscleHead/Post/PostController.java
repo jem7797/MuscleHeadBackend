@@ -1,7 +1,5 @@
 package com.MuscleHead.MuscleHead.Post;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -31,7 +29,6 @@ import java.util.UUID;
 @RequestMapping("posts/api")
 public class PostController {
 
-    private static final Logger logger = LoggerFactory.getLogger(PostController.class);
     private static final String POST_IMAGE_PREFIX = "posts/";
 
     private final PostService postService;
@@ -110,7 +107,6 @@ public class PostController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PostResponse> getPostById(@PathVariable("id") Long postId) {
-        logger.debug("Getting post by id: {}", postId);
         PostResponse post = postService.getPostById(postId);
         return ResponseEntity.ok(post);
     }

@@ -73,9 +73,7 @@ public class UserService {
 
     @Transactional
     public User createNewUser(User user) {
-        logger.debug("Creating new user with sub_id: {}", user != null ? user.getSub_id() : "null");
         if (user == null || user.getSub_id() == null) {
-            logger.error("Attempted to create user with null user or sub_id");
             throw new IllegalArgumentException("User and sub_id must not be null");
         }
         if (userRepository.existsById(user.getSub_id())) {
@@ -109,7 +107,6 @@ public class UserService {
             }
             if (birthDate != null && birthDate.equals(block.getBirth_date())) {
                 blockedEmailRepository.delete(block);
-                logger.info("Unblocked email after user turned 13: {}", block.getEmail());
             } else {
                 throw new UnderAgeException("This email cannot be used for signup until you are 13 or older.");
             }
@@ -123,9 +120,7 @@ public class UserService {
                             () -> logger.warn("Cannot assign default rank to new user: rank with level 0 (Newbie) not found. Ensure RankSeeder has run.")
                     );
         }
-        User savedUser = userRepository.save(user);
-        logger.info("User created successfully with sub_id: {}", savedUser.getSub_id());
-        return savedUser;
+        return userRepository.save(user);
     }
 
     /**
@@ -198,7 +193,6 @@ public class UserService {
                         String newKey = request.getProfilePicUrl();
                         existingUser.setProfilePicUrl(newKey);
                         existingUser.setProfilePicVersion(System.currentTimeMillis());
-                        logger.info("[PROFILE-PIC] Updated user {} | new profilePicUrl (S3 key)={}", subId, newKey);
                     }
                     if (request.getNattyStatus() != null) {
                         existingUser.setNattyStatus(request.getNattyStatus());
@@ -224,22 +218,18 @@ public class UserService {
 
                     User savedUser = userRepository.save(existingUser);
                     invalidateUserCache(savedUser.getSub_id());
-                    logger.info("User partially updated successfully with sub_id: {}", savedUser.getSub_id());
                     return savedUser;
                 });
     }
 
     @Transactional
     public Optional<User> updateUser(User updatedUser) {
-        logger.debug("Updating user with sub_id: {}", updatedUser != null ? updatedUser.getSub_id() : "null");
         if (updatedUser == null || updatedUser.getSub_id() == null) {
-            logger.error("Attempted to update user with null user or sub_id");
             throw new IllegalArgumentException("User and sub_id must not be null");
         }
 
         return userRepository.findById(updatedUser.getSub_id())
                 .map(existingUser -> {
-                    logger.debug("Found existing user, updating fields for sub_id: {}", updatedUser.getSub_id());
                     ensureUserHasRank(existingUser);
                     if (updatedUser.getEmail() != null) {
                         existingUser.setEmail(updatedUser.getEmail());
@@ -269,7 +259,6 @@ public class UserService {
                         String newKey = updatedUser.getProfilePicUrl();
                         existingUser.setProfilePicUrl(newKey);
                         existingUser.setProfilePicVersion(System.currentTimeMillis());
-                        logger.info("[PROFILE-PIC] Updated user {} | new profilePicUrl (S3 key)={}", updatedUser.getSub_id(), newKey);
                     }
                     existingUser.setBio(updatedUser.getBio());
                     existingUser.setGender(updatedUser.getGender());
@@ -280,7 +269,6 @@ public class UserService {
 
                     User savedUser = userRepository.save(existingUser);
                     invalidateUserCache(savedUser.getSub_id());
-                    logger.info("User updated successfully with sub_id: {}", savedUser.getSub_id());
                     return savedUser;
                 });
     }
@@ -299,7 +287,6 @@ public class UserService {
 
     @Transactional
     public boolean deleteUserById(String subId) {
-        logger.debug("Deleting user with sub_id: {}", subId);
         if (subId == null || subId.isBlank()) {
             logger.warn("Attempted to delete user with null or blank sub_id");
             return false;
@@ -310,7 +297,6 @@ public class UserService {
         }
         userRepository.deleteById(subId);
         invalidateUserCache(subId);
-        logger.info("User deleted successfully with sub_id: {}", subId);
         return true;
     }
 
@@ -339,7 +325,6 @@ public class UserService {
                     if (removed) {
                         userRepository.save(user);
                         invalidateUserCache(userSubId);
-                        logger.info("User {} removed nemesis {}", userSubId, nemesisSubId);
                     }
                     return removed;
                 })
@@ -348,9 +333,7 @@ public class UserService {
 
     @Transactional
     public Optional<User> getUserByUsername(String username) {
-        logger.debug("Getting user by username: {}", username);
         if (username == null || username.isBlank()) {
-            logger.error("Attempted to get user with null or blank username");
             throw new IllegalArgumentException("Username must not be blank");
         }
         return userRepository.findByUsername(username)
@@ -383,9 +366,7 @@ public class UserService {
 
     @Transactional
     public Optional<User> getUserById(String subId) {
-        logger.debug("Getting user by sub_id: {}", subId);
         if (subId == null || subId.isBlank()) {
-            logger.error("Attempted to get user with null or blank sub_id");
             throw new IllegalArgumentException("User id must not be blank");
         }
 
@@ -394,7 +375,6 @@ public class UserService {
         if (cached != null && !cached.isBlank()) {
             try {
                 User user = objectMapper.readValue(cached, User.class);
-                logger.debug("User {} served from cache", subId);
                 return Optional.of(user);
             } catch (JsonProcessingException e) {
                 logger.warn("Failed to parse cached user {}: {}", subId, e.getMessage());
@@ -414,7 +394,6 @@ public class UserService {
         try {
             String json = objectMapper.writeValueAsString(user);
             redisService.setWithTtl(USER_CACHE_PREFIX + user.getSub_id(), json, userCacheTtlSeconds);
-            logger.debug("User {} cached", user.getSub_id());
         } catch (JsonProcessingException e) {
             logger.warn("Failed to cache user {}: {}", user.getSub_id(), e.getMessage());
         }
@@ -423,7 +402,6 @@ public class UserService {
     private void invalidateUserCache(String subId) {
         if (subId == null || subId.isBlank()) return;
         redisService.delete(USER_CACHE_PREFIX + subId);
-        logger.debug("Invalidated user cache for {}", subId);
     }
 
     /**
@@ -437,7 +415,6 @@ public class UserService {
                             rank -> {
                                 user.setRank(rank);
                                 userRepository.save(user);
-                                logger.debug("Assigned default rank to user: {}", user.getSub_id());
                             },
                             () -> logger.warn("Cannot assign default rank: rank with level 0 (Newbie) not found. Ensure RankSeeder has run.")
                     );
@@ -460,7 +437,6 @@ public class UserService {
                     .ifPresent(rank -> {
                         user.setRank(rank);
                         userRepository.save(user);
-                        logger.info("User {} assigned default rank (Newbie)", user.getSub_id());
                     });
             return;
         }
@@ -475,8 +451,6 @@ public class UserService {
                     user.setRank(rank);
                     userRepository.save(user);
                     invalidateUserCache(user.getSub_id());
-                    logger.info("User {} leveled up to rank level {} ({})", user.getSub_id(), rankLevel,
-                            rank.getName());
                     if (actuallyLeveledUp && rankLevel > 0) {
                         String message = "You leveled up to " + rank.getName() + "!";
                         notificationService.createNotification(user, NotificationType.LEVEL_UP, message);

@@ -7,7 +7,6 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.jwk.source.RemoteJWKSet;
-import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
@@ -45,7 +44,6 @@ public class CognitoJwtValidator {
             // Construct JWKS URL for Cognito
             String jwksUrl = String.format("https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json", region,
                     userPoolId);
-            logger.info("Initializing Cognito JWT validator with JWKS URL: {}", jwksUrl);
 
             // Create JWK source from remote URL (Cognito's JWKS endpoint)
             JWKSource<SecurityContext> jwkSource = new RemoteJWKSet<>(new URL(jwksUrl));
@@ -56,7 +54,7 @@ public class CognitoJwtValidator {
                     JWSAlgorithm.RS256, jwkSource);
             jwtProcessor.setJWSKeySelector(keySelector);
 
-            logger.info("Cognito JWT validator initialized successfully");
+            logger.info("Cognito JWT validator initialized");
         } catch (MalformedURLException e) {
             logger.error("Failed to initialize Cognito JWT validator with malformed JWKS URL", e);
             throw new RuntimeException("Failed to initialize Cognito JWT validator", e);
@@ -78,7 +76,6 @@ public class CognitoJwtValidator {
             String expectedIssuer = String.format("https://cognito-idp.%s.amazonaws.com/%s", region, userPoolId);
             String actualIssuer = claimsSet.getIssuer();
             if (!expectedIssuer.equals(actualIssuer)) {
-                logger.warn("Token issuer mismatch. Expected: {}, Actual: {}", expectedIssuer, actualIssuer);
                 return null;
             }
 
@@ -97,7 +94,6 @@ public class CognitoJwtValidator {
                 }
                 
                 if (!audienceValid) {
-                    logger.warn("Token audience mismatch. Expected: {}, Actual: {}", appClientId, audience);
                     return null;
                 }
             }
@@ -107,31 +103,23 @@ public class CognitoJwtValidator {
                     ? claimsSet.getClaim("token_use").toString()
                     : null;
             if (tokenUse != null && !"id".equals(tokenUse) && !"access".equals(tokenUse)) {
-                logger.warn("Invalid token_use: {}", tokenUse);
                 return null;
             }
 
             // Validate expiration (already checked by processor, but double-check)
             if (claimsSet.getExpirationTime() != null &&
                     claimsSet.getExpirationTime().before(new java.util.Date())) {
-                logger.warn("Token has expired");
                 return null;
             }
 
-            logger.debug("Token validated successfully for subject: {}", claimsSet.getSubject());
             return claimsSet;
 
         } catch (ParseException e) {
-            logger.error("Failed to parse JWT token", e);
-            return null;
-        } catch (BadJOSEException e) {
-            logger.error("Invalid JWT token: {}", e.getMessage());
             return null;
         } catch (JOSEException e) {
-            logger.error("JOSE exception while validating token", e);
             return null;
         } catch (Exception e) {
-            logger.error("Unexpected error validating token", e);
+            logger.warn("Unexpected error validating JWT: {}", e.getMessage());
             return null;
         }
     }

@@ -38,44 +38,26 @@ public class SessionLogController {
 
     @PostMapping
     public ResponseEntity<SessionLogResponse> createSessionLog(@Valid @RequestBody SessionLogRequest request) {
-        logger.info("Creating new session log");
-        
-        // Resolve authenticated user
         String subId = SecurityUtils.getCurrentUserSub();
         if (subId == null) {
-            logger.error("Attempted to create session log without authentication");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         User user = userRepository.findById(subId)
-                .orElseThrow(() -> {
-                    logger.error("User not found with sub_id: {}", subId);
-                    return new RuntimeException("User not found: " + subId);
-                });
+                .orElseThrow(() -> new RuntimeException("User not found: " + subId));
 
-        try {
-            CreateSessionLogResult result = sessionLogService.createSessionLog(user, request);
-            logger.info("Successfully created session log with id: {} for user: {}",
-                    result.getSessionLog().getId(), subId);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new SessionLogResponse(result.getSessionLog().getId(), result.getNewlyAwardedMedals()));
-        } catch (Exception ex) {
-            logger.error("Error creating session log for user: {}", subId, ex);
-            throw ex;
-        }
+        CreateSessionLogResult result = sessionLogService.createSessionLog(user, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new SessionLogResponse(result.getSessionLog().getId(), result.getNewlyAwardedMedals()));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<SessionLog> updateSessionLog(
             @PathVariable("id") long sessionLogId,
             @Valid @RequestBody SessionLog sessionLog) {
-        logger.info("Updating session log with id: {}", sessionLogId);
         sessionLog.setId(sessionLogId);
         return sessionLogService.updateSessionLogById(sessionLogId, sessionLog)
-                .map(updatedSessionLog -> {
-                    logger.info("Successfully updated session log with id: {}", sessionLogId);
-                    return ResponseEntity.ok(updatedSessionLog);
-                })
+                .map(ResponseEntity::ok)
                 .orElseGet(() -> {
                     logger.warn("Session log not found for update: id: {}", sessionLogId);
                     return ResponseEntity.notFound().build();
@@ -84,9 +66,7 @@ public class SessionLogController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSessionLog(@PathVariable("id") long sessionLogId) {
-        logger.info("Deleting session log with id: {}", sessionLogId);
         if (sessionLogService.deleteSessionLogById(sessionLogId)) {
-            logger.info("Successfully deleted session log with id: {}", sessionLogId);
             return ResponseEntity.noContent().build();
         }
         logger.warn("Session log not found for deletion: id: {}", sessionLogId);
@@ -97,37 +77,20 @@ public class SessionLogController {
     public ResponseEntity<Page<SessionLog>> getSessionLogsForUser(
             @PathVariable("subId") String subId,
             @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
-        logger.debug("Getting session logs for user: {} with page: {}, size: {}",
-                subId, pageable.getPageNumber(), pageable.getPageSize());
         Page<SessionLog> sessionLogs = sessionLogService.getSessionLogsByUserId(subId, pageable);
-        logger.debug("Found {} session logs for user: {} (page {} of {})",
-                sessionLogs.getNumberOfElements(), subId, sessionLogs.getNumber(), sessionLogs.getTotalPages());
         return ResponseEntity.ok(sessionLogs);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<SessionLog> getSessionLogById(@PathVariable("id") long sessionLogId) {
-        logger.debug("Getting session log by id: {}", sessionLogId);
-        try {
-            SessionLog sessionLog = sessionLogService.getSessionLogById(sessionLogId);
-            logger.debug("Found session log with id: {}", sessionLogId);
-            return ResponseEntity.ok(sessionLog);
-        } catch (RuntimeException ex) {
-            logger.warn("Session log not found with id: {}", sessionLogId);
-            throw ex;
-        }
+        SessionLog sessionLog = sessionLogService.getSessionLogById(sessionLogId);
+        return ResponseEntity.ok(sessionLog);
     }
 
     @GetMapping("/{id}/max-lift")
     public ResponseEntity<MaxLiftResponse> getMaxLift(@PathVariable("id") long sessionLogId) {
-        logger.debug("Getting max lift for session: {}", sessionLogId);
-        try {
-            double maxLift = sessionLogService.getMaxLiftAndStore(sessionLogId);
-            return ResponseEntity.ok(new MaxLiftResponse(sessionLogId, maxLift));
-        } catch (RuntimeException ex) {
-            logger.warn("Session log not found for max-lift: {}", sessionLogId);
-            throw ex;
-        }
+        double maxLift = sessionLogService.getMaxLiftAndStore(sessionLogId);
+        return ResponseEntity.ok(new MaxLiftResponse(sessionLogId, maxLift));
     }
 
     @GetMapping("/user/{subId}/sync-max-lifts")

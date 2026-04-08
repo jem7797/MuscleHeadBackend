@@ -16,7 +16,6 @@ public class WorkedMusclesCleanupScheduler {
 
     @Scheduled(cron = "${worked-muscles.cleanup.cron:0 0 3 * * *}")
     public void deleteExpiredWorkedMuscles() {
-        logger.debug("Running worked muscles cleanup job");
         int deleted = workedMusclesService.deleteExpiredRows();
         if (deleted > 0) {
             logger.info("Worked muscles cleanup: deleted {} expired rows", deleted);
