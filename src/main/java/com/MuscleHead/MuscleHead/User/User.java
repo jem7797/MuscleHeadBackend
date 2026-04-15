@@ -1,5 +1,6 @@
 package com.MuscleHead.MuscleHead.User;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -79,6 +80,10 @@ public class User {
 
     @Column(name = "agreed_to_terms", nullable = false)
     private boolean agreedToTerms = false;
+
+    /** Server-set instant when the user first agreed to terms; null if never agreed or revoked. */
+    @Column(name = "agreed_to_terms_on")
+    private Instant agreedToTermsOn;
 
     @PositiveOrZero(message = "Lifetime weight lifted cannot be negative")
     private double lifetime_weight_lifted = 0;

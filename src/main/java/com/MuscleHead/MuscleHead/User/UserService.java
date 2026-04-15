@@ -9,6 +9,7 @@ import com.MuscleHead.MuscleHead.Notification.NotificationType;
 import com.MuscleHead.MuscleHead.Rank.RankRepository;
 import com.MuscleHead.MuscleHead.cache.RedisService;
 import com.MuscleHead.MuscleHead.exception.UnderAgeException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,6 +58,23 @@ public class UserService {
     private int userCacheTtlSeconds;
 
     private static final int MINIMUM_AGE = 13;
+
+    /**
+     * Sets {@code agreedToTerms} and {@code agreedToTermsOn}: timestamp is set on transition to true,
+     * cleared when set to false.
+     */
+    private static void applyAgreedToTermsUpdate(User existingUser, boolean nowAgreed) {
+        boolean wasAgreed = existingUser.isAgreedToTerms();
+        if (nowAgreed) {
+            if (!wasAgreed) {
+                existingUser.setAgreedToTermsOn(Instant.now());
+            }
+            existingUser.setAgreedToTerms(true);
+        } else {
+            existingUser.setAgreedToTerms(false);
+            existingUser.setAgreedToTermsOn(null);
+        }
+    }
 
     /**
      * Records a minor signup attempt by adding the email to the blocked list.
@@ -119,6 +137,9 @@ public class UserService {
                             user::setRank,
                             () -> logger.warn("Cannot assign default rank to new user: rank with level 0 (Newbie) not found. Ensure RankSeeder has run.")
                     );
+        }
+        if (user.isAgreedToTerms() && user.getAgreedToTermsOn() == null) {
+            user.setAgreedToTermsOn(Instant.now());
         }
         return userRepository.save(user);
     }
@@ -187,7 +208,7 @@ public class UserService {
                         existingUser.setPrivacy_setting(request.getPrivacy_setting());
                     }
                     if (request.getAgreedToTerms() != null) {
-                        existingUser.setAgreedToTerms(request.getAgreedToTerms());
+                        applyAgreedToTermsUpdate(existingUser, request.getAgreedToTerms());
                     }
                     if (request.getProfilePicUrl() != null) {
                         String newKey = request.getProfilePicUrl();
@@ -249,7 +270,7 @@ public class UserService {
                     existingUser.setStat_tracking(updatedUser.isStat_tracking());
                     existingUser.setNattyStatus(updatedUser.isNattyStatus());
                     existingUser.setPrivacy_setting(updatedUser.getPrivacy_setting());
-                    existingUser.setAgreedToTerms(updatedUser.isAgreedToTerms());
+                    applyAgreedToTermsUpdate(existingUser, updatedUser.isAgreedToTerms());
                     existingUser.setLifetime_weight_lifted(updatedUser.getLifetime_weight_lifted());
                     existingUser.setHighest_weight_lifted(updatedUser.getHighest_weight_lifted());
                     existingUser.setLifetime_gym_time(updatedUser.getLifetime_gym_time());
