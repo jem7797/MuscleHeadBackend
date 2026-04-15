@@ -16,6 +16,7 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class LiveSessionService {
+    private static final java.time.Duration INVITE_VISIBILITY_WINDOW = java.time.Duration.ofHours(24);
 
     @Autowired
     private LiveWorkoutSessionRepository sessionRepository;
@@ -220,7 +221,8 @@ public class LiveSessionService {
             throw new IllegalArgumentException("User ID is required");
         }
 
-        List<SessionInvite> invites = inviteRepository.findPendingInvitesForUser(userId);
+        Instant cutoff = Instant.now().minus(INVITE_VISIBILITY_WINDOW);
+        List<SessionInvite> invites = inviteRepository.findPendingInvitesForUser(userId, cutoff);
         return invites.stream()
                 .map(this::toPendingInviteResponse)
                 .collect(Collectors.toList());
@@ -231,7 +233,8 @@ public class LiveSessionService {
             throw new IllegalArgumentException("User ID is required");
         }
 
-        List<SessionInvite> invites = inviteRepository.findUnseenPendingInvitesForUser(userId);
+        Instant cutoff = Instant.now().minus(INVITE_VISIBILITY_WINDOW);
+        List<SessionInvite> invites = inviteRepository.findUnseenPendingInvitesForUser(userId, cutoff);
         return invites.stream()
                 .map(this::toPendingInviteResponse)
                 .collect(Collectors.toList());
