@@ -3,6 +3,7 @@ package com.MuscleHead.MuscleHead.LiveSession;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Instant;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -38,4 +39,6 @@ public interface SessionInviteRepository extends JpaRepository<SessionInvite, UU
     List<SessionInvite> findUnseenPendingInvitesForUser(
             @Param("userId") String userId,
             @Param("cutoff") java.time.Instant cutoff);
+
+    long deleteBySentAtBefore(Instant cutoff);
 }

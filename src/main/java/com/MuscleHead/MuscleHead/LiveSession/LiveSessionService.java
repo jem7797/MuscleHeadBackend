@@ -254,6 +254,12 @@ public class LiveSessionService {
         }
     }
 
+    @Transactional
+    public long deleteExpiredInvites() {
+        Instant cutoff = Instant.now().minus(INVITE_VISIBILITY_WINDOW);
+        return inviteRepository.deleteBySentAtBefore(cutoff);
+    }
+
     private PendingInviteResponse toPendingInviteResponse(SessionInvite i) {
         return new PendingInviteResponse(
                 i.getId(),
