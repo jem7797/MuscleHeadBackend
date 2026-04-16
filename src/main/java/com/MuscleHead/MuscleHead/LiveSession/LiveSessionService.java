@@ -17,6 +17,7 @@ import jakarta.transaction.Transactional;
 @Service
 public class LiveSessionService {
     private static final java.time.Duration INVITE_VISIBILITY_WINDOW = java.time.Duration.ofHours(24);
+    private static final int INVITE_DELETE_BATCH_SIZE = 2_000;
 
     @Autowired
     private LiveWorkoutSessionRepository sessionRepository;
@@ -29,6 +30,10 @@ public class LiveSessionService {
 
     @Autowired
     private UserRepository userRepository;
+
+    private static Instant inviteVisibilityCutoff() {
+        return Instant.now().minus(INVITE_VISIBILITY_WINDOW);
+    }
 
     @Transactional
     public CreateSessionResponse createSession(String hostUserId) {
@@ -221,7 +226,7 @@ public class LiveSessionService {
             throw new IllegalArgumentException("User ID is required");
         }
 
-        Instant cutoff = Instant.now().minus(INVITE_VISIBILITY_WINDOW);
+        Instant cutoff = inviteVisibilityCutoff();
         List<SessionInvite> invites = inviteRepository.findPendingInvitesForUser(userId, cutoff);
         return invites.stream()
                 .map(this::toPendingInviteResponse)
@@ -233,7 +238,7 @@ public class LiveSessionService {
             throw new IllegalArgumentException("User ID is required");
         }
 
-        Instant cutoff = Instant.now().minus(INVITE_VISIBILITY_WINDOW);
+        Instant cutoff = inviteVisibilityCutoff();
         List<SessionInvite> invites = inviteRepository.findUnseenPendingInvitesForUser(userId, cutoff);
         return invites.stream()
                 .map(this::toPendingInviteResponse)
@@ -246,18 +251,21 @@ public class LiveSessionService {
             throw new IllegalArgumentException("Invite ID and user ID are required");
         }
 
-        SessionInvite invite = inviteRepository.findByIdAndToUserId(inviteId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Invite not found for user: " + inviteId));
-        if (invite.getRecipientToastSeenAt() == null) {
-            invite.setRecipientToastSeenAt(Instant.now());
-            inviteRepository.save(invite);
+        int updated = inviteRepository.markRecipientToastSeenIfNull(inviteId, userId, Instant.now());
+        if (updated == 0 && !inviteRepository.existsByIdAndToUserId(inviteId, userId)) {
+            throw new IllegalArgumentException("Invite not found for user: " + inviteId);
         }
     }
 
-    @Transactional
     public long deleteExpiredInvites() {
-        Instant cutoff = Instant.now().minus(INVITE_VISIBILITY_WINDOW);
-        return inviteRepository.deleteBySentAtBefore(cutoff);
+        Instant cutoff = inviteVisibilityCutoff();
+        long total = 0;
+        int deleted;
+        do {
+            deleted = inviteRepository.deleteExpiredInvitesBatch(cutoff, INVITE_DELETE_BATCH_SIZE);
+            total += deleted;
+        } while (deleted > 0);
+        return total;
     }
 
     private PendingInviteResponse toPendingInviteResponse(SessionInvite i) {
