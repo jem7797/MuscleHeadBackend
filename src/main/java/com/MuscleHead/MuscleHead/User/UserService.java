@@ -17,12 +17,15 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -383,6 +386,26 @@ public class UserService {
         Page<User> page = userRepository.findByUsernameContainingIgnoreCaseExcludingHidden(escapedCharacters, pageable);
         page.getContent().forEach(this::ensureUserHasRank);
         return page;
+    }
+
+    /**
+     * Clears Spring Cache entry for {@code getRecommendedUsers} for the given user (Cognito sub).
+     * Invoked from {@link com.MuscleHead.MuscleHead.Follow.FollowService} after follow/unfollow.
+     */
+    @CacheEvict(cacheNames = "recommendedUsers", key = "#currentSubId")
+    public void invalidateRecommendedUsersCacheForFollower(String currentSubId) {
+    }
+
+    /**
+     * Top users by follower count, excluding the current user and anyone they already follow.
+     */
+    @Cacheable(cacheNames = "recommendedUsers", key = "#currentSubId")
+    @Transactional
+    public List<User> getRecommendedUsers(String currentSubId) {
+        if (currentSubId == null || currentSubId.isBlank()) {
+            throw new IllegalArgumentException("Current user id must not be blank");
+        }
+        return userRepository.findTopRecommendedUsers(currentSubId, PageRequest.of(0, 5));
     }
 
     @Transactional

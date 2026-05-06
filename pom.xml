@@ -113,7 +113,11 @@
     <version>2.25.0</version>
 </dependency>
 
-		<!-- Redis (Upstash) via Jedis -->
+		<!-- Redis: Spring Data (cache) + Jedis (existing RedisService) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>

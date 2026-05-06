@@ -18,6 +18,7 @@ import com.MuscleHead.MuscleHead.Notification.NotificationService;
 import com.MuscleHead.MuscleHead.Post.PostService;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
+import com.MuscleHead.MuscleHead.User.UserService;
 import com.MuscleHead.MuscleHead.cache.RedisService;
 
 import jakarta.transaction.Transactional;
@@ -62,6 +63,9 @@ public class FollowService {
     @Autowired
     private PostService postService;
 
+    @Autowired
+    private UserService userService;
+
     @Transactional
     public void follow(String followerSubId, String followeeSubId) {
         if (followerSubId == null || followeeSubId == null) {
@@ -86,6 +90,7 @@ public class FollowService {
         }
 
         createFollowAndNotify(follower, followee, followerSubId, followeeSubId);
+        userService.invalidateRecommendedUsersCacheForFollower(followerSubId);
     }
 
     private boolean isPrivate(User user) {
@@ -227,6 +232,7 @@ public class FollowService {
         invalidateMutualCacheForUser(followeeSubId);
         invalidateFollowListsCache(followerSubId, followeeSubId);
         invalidateIsFollowingCache(followerSubId, followeeSubId);
+        userService.invalidateRecommendedUsersCacheForFollower(followerSubId);
     }
 
     public List<UserSummary> getFollowers(String subId) {

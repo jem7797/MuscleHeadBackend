@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.validation.annotation.Validated;
 
 import com.MuscleHead.MuscleHead.config.SecurityUtils;
@@ -32,7 +35,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.groups.Default;
 
 @RestController
-@RequestMapping("user/api/")
+@RequestMapping({ "user/api/", "api/users" })
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -134,6 +137,20 @@ public class UserController {
         return ResponseEntity.notFound().build();
     }
 
+    @GetMapping("recommended")
+    public ResponseEntity<RecommendedUsersResponse> getRecommendedUsers() {
+        String subId = SecurityUtils.getCurrentUserSub();
+        if (subId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<User> users = userService.getRecommendedUsers(subId);
+        List<RecommendedUserItem> items = users.stream()
+                .map(RecommendedUserItem::fromUser)
+                .collect(Collectors.toList());
+        items.forEach(this::enrichRecommendedProfilePic);
+        return ResponseEntity.ok(new RecommendedUsersResponse(items));
+    }
+
     @GetMapping("me")
     public ResponseEntity<User> getCurrentUser() {
         String subId = SecurityUtils.getCurrentUserSub();
@@ -216,6 +233,17 @@ public class UserController {
         try {
             String presignedUrl = s3Service.generatePresignedDownloadUrl(key);
             user.setProfilePicUrl(presignedUrl);
+        } catch (Exception e) {
+            logger.warn("[PROFILE-PIC] Failed to generate presigned URL for key {}: {}", key, e.getMessage());
+        }
+    }
+
+    private void enrichRecommendedProfilePic(RecommendedUserItem item) {
+        if (item == null || item.getProfilePicture() == null || item.getProfilePicture().isBlank()) return;
+        String key = item.getProfilePicture();
+        if (key.startsWith("http://") || key.startsWith("https://")) return;
+        try {
+            item.setProfilePicture(s3Service.generatePresignedDownloadUrl(key));
         } catch (Exception e) {
             logger.warn("[PROFILE-PIC] Failed to generate presigned URL for key {}: {}", key, e.getMessage());
         }

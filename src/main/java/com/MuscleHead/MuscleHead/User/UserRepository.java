@@ -24,4 +24,10 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     @Query("SELECT u FROM User u JOIN u.nemesis n WHERE n.sub_id = :nemesisSubId")
     List<User> findUsersWhoHaveAsNemesis(@Param("nemesisSubId") String nemesisSubId);
+
+    @Query("SELECT u FROM User u WHERE u.sub_id <> :currentSubId "
+            + "AND u.sub_id NOT IN (SELECT f.id.followeeSubId FROM Follow f WHERE f.id.followerSubId = :currentSubId) "
+            + "AND (u.privacy_setting IS NULL OR u.privacy_setting != 'hidden') "
+            + "ORDER BY u.number_of_followers DESC")
+    List<User> findTopRecommendedUsers(@Param("currentSubId") String currentSubId, Pageable pageable);
 }
