@@ -16,6 +16,8 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Configuration
 public class CacheConfig {
 
@@ -53,8 +55,10 @@ public class CacheConfig {
     }
 
     @Bean
-    public CacheManager cacheManager(LettuceConnectionFactory redisConnectionFactory) {
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer();
+    public CacheManager cacheManager(
+            LettuceConnectionFactory redisConnectionFactory,
+            ObjectMapper objectMapper) {
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
 
         RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))
