@@ -16,12 +16,14 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 
 @Configuration
 public class CacheConfig {
 
-    public static final String RECOMMENDED_USERS_CACHE = "recommendedUsers";
+    public static final String RECOMMENDED_USERS_CACHE = "recommendedUsers:v2";
 
     /**
      * Redis connection for Spring Cache ({@code @Cacheable}). Uses the same Upstash URI as {@link RedisConfig}.
@@ -58,7 +60,13 @@ public class CacheConfig {
     public CacheManager cacheManager(
             LettuceConnectionFactory redisConnectionFactory,
             ObjectMapper objectMapper) {
-        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(objectMapper);
+        ObjectMapper cacheObjectMapper = objectMapper.copy();
+        cacheObjectMapper.findAndRegisterModules();
+        cacheObjectMapper.activateDefaultTyping(
+                LaissezFaireSubTypeValidator.instance,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY);
+        GenericJackson2JsonRedisSerializer jsonSerializer = new GenericJackson2JsonRedisSerializer(cacheObjectMapper);
 
         RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(10))

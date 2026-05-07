@@ -8,6 +8,7 @@ import com.MuscleHead.MuscleHead.Notification.NotificationService;
 import com.MuscleHead.MuscleHead.Notification.NotificationType;
 import com.MuscleHead.MuscleHead.Rank.RankRepository;
 import com.MuscleHead.MuscleHead.cache.RedisService;
+import com.MuscleHead.MuscleHead.config.CacheConfig;
 import com.MuscleHead.MuscleHead.exception.UnderAgeException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -392,14 +393,14 @@ public class UserService {
      * Clears Spring Cache entry for {@code getRecommendedUsers} for the given user (Cognito sub).
      * Invoked from {@link com.MuscleHead.MuscleHead.Follow.FollowService} after follow/unfollow.
      */
-    @CacheEvict(cacheNames = "recommendedUsers", key = "#currentSubId")
+    @CacheEvict(cacheNames = CacheConfig.RECOMMENDED_USERS_CACHE, key = "#currentSubId")
     public void invalidateRecommendedUsersCacheForFollower(String currentSubId) {
     }
 
     /**
      * Top users by follower count, excluding the current user and anyone they already follow.
      */
-    @Cacheable(cacheNames = "recommendedUsers", key = "#currentSubId")
+    @Cacheable(cacheNames = CacheConfig.RECOMMENDED_USERS_CACHE, key = "#currentSubId")
     @Transactional
     public List<User> getRecommendedUsers(String currentSubId) {
         if (currentSubId == null || currentSubId.isBlank()) {
