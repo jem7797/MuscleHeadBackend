@@ -193,7 +193,12 @@ public class SessionLogService {
         return sessionLogRepository.findById(sessionLogId)
                 .map(sessionLog -> {
                     User user = sessionLog.getUser();
+                    double sessionWeight = sessionLog.getTotal_weight_lifted() != null
+                            ? sessionLog.getTotal_weight_lifted()
+                            : 0.0;
                     sessionLogRepository.delete(sessionLog);
+                    user.setLifetime_weight_lifted(Math.max(0.0, user.getLifetime_weight_lifted() - sessionWeight));
+                    userRepository.save(user);
                     medalService.checkDeleteMedal(user);
                     return true;
                 })
