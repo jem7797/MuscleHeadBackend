@@ -21,6 +21,7 @@ import com.MuscleHead.MuscleHead.Notification.NotificationType;
 import com.MuscleHead.MuscleHead.Post.Comment.CommentRepository;
 import com.MuscleHead.MuscleHead.Post.PostRepository;
 import com.MuscleHead.MuscleHead.User.User;
+import com.MuscleHead.MuscleHead.User.UserRepository;
 import com.MuscleHead.MuscleHead.Workout.SessionInstance.SessionInstance;
 import com.MuscleHead.MuscleHead.Workout.SessionInstance.SessionInstanceRepository;
 import com.MuscleHead.MuscleHead.Workout.SessionLog.SessionLog;
@@ -34,6 +35,11 @@ public class MedalService {
     private static final int GYM_RAT_HOURS = 24;
     private static final int SAME_TIME_DAYS = 5;
     private static final int STICK_FIGURE_CONSECUTIVE = 5;
+    private static final int STREAK_FIRST_DOWN_DAYS = 7;
+    private static final int STREAK_BINGE_LIFTER_DAYS = 28;
+    private static final int STREAK_BLACK_MAMBA_DAYS = 183;
+    private static final int STREAK_COLE_TRAIN_DAYS = 365;
+    private static final int STREAK_PERFECT_ATTENDANCE_DAYS = 730;
 
     @Autowired
     private UserMedalRepository userMedalRepository;
@@ -49,6 +55,9 @@ public class MedalService {
 
     @Autowired
     private CommentRepository commentRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private NotificationService notificationService;
@@ -210,6 +219,26 @@ public class MedalService {
                 .count();
         if (workoutsToday >= 2) {
             tryAward(user, MedalName.GLUTTON_FOR_PUNISHMENT, "2 workouts in the same day!", newlyAwarded);
+        }
+
+        int currentStreakDays = userRepository.findById(subId)
+                .map(User::getCurrentStreak)
+                .orElse(user.getCurrentStreak());
+
+        if (currentStreakDays >= STREAK_FIRST_DOWN_DAYS) {
+            tryAward(user, MedalName.FIRST_DOWN, "7 day streak!", newlyAwarded);
+        }
+        if (currentStreakDays >= STREAK_BINGE_LIFTER_DAYS) {
+            tryAward(user, MedalName.BINGE_LIFTER, "4 week streak!", newlyAwarded);
+        }
+        if (currentStreakDays >= STREAK_BLACK_MAMBA_DAYS) {
+            tryAward(user, MedalName.BLACK_MAMBA_MENTALITY, "6 month streak!", newlyAwarded);
+        }
+        if (currentStreakDays >= STREAK_COLE_TRAIN_DAYS) {
+            tryAward(user, MedalName.COLE_TRAIN, "1 year streak!", newlyAwarded);
+        }
+        if (currentStreakDays >= STREAK_PERFECT_ATTENDANCE_DAYS) {
+            tryAward(user, MedalName.PERFECT_ATTENDANCE, "2 year streak!", newlyAwarded);
         }
         return newlyAwarded;
     }

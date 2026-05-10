@@ -42,7 +42,12 @@ public enum MedalName {
     THIS_IS_SPARTA("Get 300 followers"),
     POEMS_OVER_PRS("Make 10 posts without pictures"),
     I_LOVE_BEING_LOVED("Get 100 followers"),
-    GLUTTON_FOR_PUNISHMENT("Log 2 workouts in the same day");
+    GLUTTON_FOR_PUNISHMENT("Log 2 workouts in the same day"),
+    FIRST_DOWN("Have a 7 day streak"),
+    BINGE_LIFTER("Have a 4 week long streak"),
+    BLACK_MAMBA_MENTALITY("Have a 6 month long streak"),
+    COLE_TRAIN("Have a year long streak"),
+    PERFECT_ATTENDANCE("Have a 2 year long streak");
 
     private final String description;
 
