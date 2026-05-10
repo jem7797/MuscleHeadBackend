@@ -18,6 +18,7 @@ import com.MuscleHead.MuscleHead.Movement.Movement;
 import com.MuscleHead.MuscleHead.Movement.MovementRepository;
 import com.MuscleHead.MuscleHead.Routine.WorkoutTemplate.WorkoutTemplate;
 import com.MuscleHead.MuscleHead.Routine.WorkoutTemplate.WorkoutTemplateRepository;
+import com.MuscleHead.MuscleHead.User.StreakService;
 import com.MuscleHead.MuscleHead.User.User;
 import com.MuscleHead.MuscleHead.User.UserRepository;
 import com.MuscleHead.MuscleHead.User.UserService;
@@ -52,6 +53,9 @@ public class SessionLogService {
 
     @Autowired
     MedalService medalService;
+
+    @Autowired
+    StreakService streakService;
 
     @Transactional
     public CreateSessionLogResult createSessionLog(User user, SessionLogRequest request) {
@@ -138,6 +142,7 @@ public class SessionLogService {
         user.setLifetime_gym_time(user.getLifetime_gym_time() + gymTime);
         userRepository.save(user);
         userService.levelUp(user);
+        streakService.onWorkoutLogged(user.getSub_id());
         List<MedalResponse> newlyAwarded = medalService.checkAndAwardMedals(user, savedSessionLog);
 
         return new CreateSessionLogResult(savedSessionLog, newlyAwarded);
@@ -161,6 +166,7 @@ public class SessionLogService {
         user.setLifetime_gym_time(user.getLifetime_gym_time() + savedSessionLog.getTimeSpentInGym());
         userRepository.save(user);
         userService.levelUp(user);
+        streakService.onWorkoutLogged(user.getSub_id());
         medalService.checkAndAwardMedals(user, savedSessionLog);
 
         return savedSessionLog;

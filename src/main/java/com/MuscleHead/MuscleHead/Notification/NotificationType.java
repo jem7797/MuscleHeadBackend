@@ -4,5 +4,6 @@ public enum NotificationType {
     NEMESIS_POST,
     LEVEL_UP,
     MEDAL_EARNED,
-    FOLLOW
+    FOLLOW,
+    STREAK_AT_RISK
 }

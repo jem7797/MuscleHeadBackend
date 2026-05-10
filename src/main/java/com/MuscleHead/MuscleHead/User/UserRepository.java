@@ -2,6 +2,7 @@ package com.MuscleHead.MuscleHead.User;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,4 +31,6 @@ public interface UserRepository extends JpaRepository<User, String> {
             + "AND (u.privacy_setting IS NULL OR u.privacy_setting != 'hidden') "
             + "ORDER BY u.number_of_followers DESC")
     List<User> findTopRecommendedUsers(@Param("currentSubId") String currentSubId, Pageable pageable);
+
+    List<User> findByStreak_statusIn(Collection<StreakStatus> statuses);
 }

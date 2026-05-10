@@ -44,6 +44,9 @@ public class UserController {
     private UserService userService;
 
     @Autowired
+    private StreakService streakService;
+
+    @Autowired
     private S3Service s3Service;
 
     @PostMapping("minor-signup-attempt")
@@ -149,6 +152,18 @@ public class UserController {
                 .collect(Collectors.toList());
         items.forEach(this::enrichRecommendedProfilePic);
         return ResponseEntity.ok(new RecommendedUsersResponse(items));
+    }
+
+    @GetMapping("{subId}/streak")
+    public ResponseEntity<StreakResponse> getUserStreak(@PathVariable String subId) {
+        String authSubId = SecurityUtils.getCurrentUserSub();
+        if (authSubId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        if (!authSubId.equals(subId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(streakService.getStreak(subId));
     }
 
     @GetMapping("me")

@@ -85,6 +85,24 @@ public class User {
     @Column(name = "agreed_to_terms_on")
     private Instant agreedToTermsOn;
 
+    @Column(name = "current_streak", nullable = false)
+    @Min(value = 0, message = "Current streak cannot be negative")
+    private int current_streak = 0;
+
+    @Column(name = "longest_streak", nullable = false)
+    @Min(value = 0, message = "Longest streak cannot be negative")
+    private int longest_streak = 0;
+
+    @Column(name = "last_workout_date")
+    private LocalDate last_workout_date;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "streak_status", nullable = false)
+    private StreakStatus streak_status = StreakStatus.BROKEN;
+
+    @Column(name = "grace_period_start")
+    private LocalDate grace_period_start;
+
     @PositiveOrZero(message = "Lifetime weight lifted cannot be negative")
     private double lifetime_weight_lifted = 0;
 
