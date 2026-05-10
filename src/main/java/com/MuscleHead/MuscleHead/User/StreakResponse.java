@@ -8,8 +8,8 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class StreakResponse {
-    private int current_streak;
-    private int longest_streak;
-    private StreakStatus streak_status;
-    private LocalDate grace_period_start;
+    private int currentStreak;
+    private int longestStreak;
+    private StreakStatus streakStatus;
+    private LocalDate gracePeriodStart;
 }

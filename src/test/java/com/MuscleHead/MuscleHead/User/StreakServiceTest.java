@@ -42,79 +42,79 @@ class StreakServiceTest {
         serviceAt("2026-05-02").onWorkoutLogged("user-1");
         StreakResponse response = serviceAt("2026-05-03").onWorkoutLogged("user-1");
 
-        assertEquals(3, response.getCurrent_streak());
-        assertEquals(3, response.getLongest_streak());
-        assertEquals(StreakStatus.ACTIVE, response.getStreak_status());
-        assertNull(response.getGrace_period_start());
+        assertEquals(3, response.getCurrentStreak());
+        assertEquals(3, response.getLongestStreak());
+        assertEquals(StreakStatus.ACTIVE, response.getStreakStatus());
+        assertNull(response.getGracePeriodStart());
     }
 
     @Test
     void missesDayFourAndFive_streakAtRiskAndIntact() {
         User user = createUser("user-2");
-        user.setCurrent_streak(3);
-        user.setLongest_streak(3);
-        user.setLast_workout_date(LocalDate.of(2026, 5, 3));
-        user.setStreak_status(StreakStatus.ACTIVE);
+        user.setCurrentStreak(3);
+        user.setLongestStreak(3);
+        user.setLastWorkoutDate(LocalDate.of(2026, 5, 3));
+        user.setStreakStatus(StreakStatus.ACTIVE);
         when(userRepository.findById("user-2")).thenReturn(Optional.of(user));
 
         StreakResponse response = serviceAt("2026-05-05").evaluateStreak("user-2");
 
-        assertEquals(3, response.getCurrent_streak());
-        assertEquals(3, response.getLongest_streak());
-        assertEquals(StreakStatus.AT_RISK, response.getStreak_status());
-        assertEquals(LocalDate.of(2026, 5, 5), response.getGrace_period_start());
+        assertEquals(3, response.getCurrentStreak());
+        assertEquals(3, response.getLongestStreak());
+        assertEquals(StreakStatus.AT_RISK, response.getStreakStatus());
+        assertEquals(LocalDate.of(2026, 5, 5), response.getGracePeriodStart());
     }
 
     @Test
     void logsDuringGracePeriod_streakResumesAndIncrements() {
         User user = createUser("user-3");
-        user.setCurrent_streak(3);
-        user.setLongest_streak(3);
-        user.setLast_workout_date(LocalDate.of(2026, 5, 3));
-        user.setStreak_status(StreakStatus.AT_RISK);
-        user.setGrace_period_start(LocalDate.of(2026, 5, 5));
+        user.setCurrentStreak(3);
+        user.setLongestStreak(3);
+        user.setLastWorkoutDate(LocalDate.of(2026, 5, 3));
+        user.setStreakStatus(StreakStatus.AT_RISK);
+        user.setGracePeriodStart(LocalDate.of(2026, 5, 5));
         when(userRepository.findById("user-3")).thenReturn(Optional.of(user));
 
         StreakResponse response = serviceAt("2026-05-06").onWorkoutLogged("user-3");
 
-        assertEquals(4, response.getCurrent_streak());
-        assertEquals(4, response.getLongest_streak());
-        assertEquals(StreakStatus.ACTIVE, response.getStreak_status());
-        assertNull(response.getGrace_period_start());
+        assertEquals(4, response.getCurrentStreak());
+        assertEquals(4, response.getLongestStreak());
+        assertEquals(StreakStatus.ACTIVE, response.getStreakStatus());
+        assertNull(response.getGracePeriodStart());
     }
 
     @Test
     void missesFourDaysOrMore_streakBreaksAndResets() {
         User user = createUser("user-4");
-        user.setCurrent_streak(3);
-        user.setLongest_streak(3);
-        user.setLast_workout_date(LocalDate.of(2026, 5, 3));
-        user.setStreak_status(StreakStatus.ACTIVE);
+        user.setCurrentStreak(3);
+        user.setLongestStreak(3);
+        user.setLastWorkoutDate(LocalDate.of(2026, 5, 3));
+        user.setStreakStatus(StreakStatus.ACTIVE);
         when(userRepository.findById("user-4")).thenReturn(Optional.of(user));
 
         StreakResponse response = serviceAt("2026-05-07").evaluateStreak("user-4");
 
-        assertEquals(0, response.getCurrent_streak());
-        assertEquals(3, response.getLongest_streak());
-        assertEquals(StreakStatus.BROKEN, response.getStreak_status());
-        assertNull(response.getGrace_period_start());
+        assertEquals(0, response.getCurrentStreak());
+        assertEquals(3, response.getLongestStreak());
+        assertEquals(StreakStatus.BROKEN, response.getStreakStatus());
+        assertNull(response.getGracePeriodStart());
     }
 
     @Test
     void firstWorkoutAfterBroken_startsFreshAtOne() {
         User user = createUser("user-5");
-        user.setCurrent_streak(0);
-        user.setLongest_streak(4);
-        user.setStreak_status(StreakStatus.BROKEN);
-        user.setLast_workout_date(LocalDate.of(2026, 5, 1));
+        user.setCurrentStreak(0);
+        user.setLongestStreak(4);
+        user.setStreakStatus(StreakStatus.BROKEN);
+        user.setLastWorkoutDate(LocalDate.of(2026, 5, 1));
         when(userRepository.findById("user-5")).thenReturn(Optional.of(user));
 
         StreakResponse response = serviceAt("2026-05-10").onWorkoutLogged("user-5");
 
-        assertEquals(1, response.getCurrent_streak());
-        assertEquals(4, response.getLongest_streak());
-        assertEquals(StreakStatus.ACTIVE, response.getStreak_status());
-        assertEquals(LocalDate.of(2026, 5, 10), user.getLast_workout_date());
+        assertEquals(1, response.getCurrentStreak());
+        assertEquals(4, response.getLongestStreak());
+        assertEquals(StreakStatus.ACTIVE, response.getStreakStatus());
+        assertEquals(LocalDate.of(2026, 5, 10), user.getLastWorkoutDate());
     }
 
     private StreakService serviceAt(String dateIso) {
@@ -126,7 +126,7 @@ class StreakServiceTest {
     private User createUser(String subId) {
         User user = new User();
         user.setSub_id(subId);
-        user.setStreak_status(StreakStatus.BROKEN);
+        user.setStreakStatus(StreakStatus.BROKEN);
         return user;
     }
 }
