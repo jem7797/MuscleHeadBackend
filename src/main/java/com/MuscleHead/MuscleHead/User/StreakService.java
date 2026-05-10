@@ -39,7 +39,7 @@ public class StreakService {
 
         applyStreakEvaluation(user, today);
 
-        if (user.getStreak_status() == StreakStatus.BROKEN || user.getCurrent_streak() <= 0) {
+        if (user.getStreakStatus() == StreakStatus.BROKEN || user.getCurrent_streak() <= 0) {
             user.setCurrent_streak(1);
         } else {
             user.setCurrent_streak(user.getCurrent_streak() + 1);
@@ -47,7 +47,7 @@ public class StreakService {
 
         user.setLast_workout_date(today);
         user.setGrace_period_start(null);
-        user.setStreak_status(StreakStatus.ACTIVE);
+        user.setStreakStatus(StreakStatus.ACTIVE);
         if (user.getCurrent_streak() > user.getLongest_streak()) {
             user.setLongest_streak(user.getCurrent_streak());
         }
@@ -62,11 +62,11 @@ public class StreakService {
         LocalDate today = utcToday();
 
         for (User user : users) {
-            StreakStatus previousStatus = user.getStreak_status();
+            StreakStatus previousStatus = user.getStreakStatus();
             applyStreakEvaluation(user, today);
             userRepository.save(user);
 
-            if (previousStatus != StreakStatus.AT_RISK && user.getStreak_status() == StreakStatus.AT_RISK) {
+            if (previousStatus != StreakStatus.AT_RISK && user.getStreakStatus() == StreakStatus.AT_RISK) {
                 notificationService.createNotification(
                         user,
                         NotificationType.STREAK_AT_RISK,
@@ -84,7 +84,7 @@ public class StreakService {
     private void applyStreakEvaluation(User user, LocalDate today) {
         LocalDate lastWorkoutDate = user.getLast_workout_date();
         if (lastWorkoutDate == null) {
-            user.setStreak_status(StreakStatus.BROKEN);
+            user.setStreakStatus(StreakStatus.BROKEN);
             user.setCurrent_streak(0);
             user.setGrace_period_start(null);
             return;
@@ -93,20 +93,20 @@ public class StreakService {
         long daysSinceLastWorkout = java.time.temporal.ChronoUnit.DAYS.between(lastWorkoutDate, today);
 
         if (daysSinceLastWorkout <= 1) {
-            user.setStreak_status(StreakStatus.ACTIVE);
+            user.setStreakStatus(StreakStatus.ACTIVE);
             user.setGrace_period_start(null);
             return;
         }
 
         if (daysSinceLastWorkout <= 3) {
-            user.setStreak_status(StreakStatus.AT_RISK);
+            user.setStreakStatus(StreakStatus.AT_RISK);
             if (user.getGrace_period_start() == null) {
                 user.setGrace_period_start(lastWorkoutDate.plusDays(2));
             }
             return;
         }
 
-        user.setStreak_status(StreakStatus.BROKEN);
+        user.setStreakStatus(StreakStatus.BROKEN);
         user.setCurrent_streak(0);
         user.setGrace_period_start(null);
     }
@@ -127,7 +127,7 @@ public class StreakService {
         return new StreakResponse(
                 user.getCurrent_streak(),
                 user.getLongest_streak(),
-                user.getStreak_status(),
+                user.getStreakStatus(),
                 user.getGrace_period_start());
     }
 }

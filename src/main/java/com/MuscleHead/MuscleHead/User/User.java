@@ -98,7 +98,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "streak_status", nullable = false)
-    private StreakStatus streak_status = StreakStatus.BROKEN;
+    private StreakStatus streakStatus = StreakStatus.BROKEN;
 
     @Column(name = "grace_period_start")
     private LocalDate grace_period_start;
