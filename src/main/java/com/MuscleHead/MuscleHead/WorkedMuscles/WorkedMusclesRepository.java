@@ -10,7 +10,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface WorkedMusclesRepository extends JpaRepository<WorkedMuscles, Long> {
 
-    List<WorkedMuscles> findByUserIdAndExpiresAtAfter(String userId, LocalDateTime now);
+    @Query("SELECT wm FROM WorkedMuscles wm WHERE wm.user.sub_id = :userId AND wm.expiresAt > :now")
+    List<WorkedMuscles> findByUserIdAndExpiresAtAfter(@Param("userId") String userId, @Param("now") LocalDateTime now);
 
     @Modifying
     @Query(value = """

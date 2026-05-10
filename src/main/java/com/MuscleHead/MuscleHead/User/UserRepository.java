@@ -32,5 +32,5 @@ public interface UserRepository extends JpaRepository<User, String> {
             + "ORDER BY u.number_of_followers DESC")
     List<User> findTopRecommendedUsers(@Param("currentSubId") String currentSubId, Pageable pageable);
 
-    List<User> findByStreak_statusIn(Collection<StreakStatus> statuses);
+    List<User> findByStreakStatusIn(Collection<StreakStatus> statuses);
 }
