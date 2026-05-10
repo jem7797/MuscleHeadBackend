@@ -58,7 +58,7 @@ public class StreakService {
 
     @Transactional
     public void evaluateStreaksForActiveUsers() {
-        List<User> users = userRepository.findByStreak_statusIn(List.of(StreakStatus.ACTIVE, StreakStatus.AT_RISK));
+        List<User> users = userRepository.findByStreakStatusIn(List.of(StreakStatus.ACTIVE, StreakStatus.AT_RISK));
         LocalDate today = utcToday();
 
         for (User user : users) {
