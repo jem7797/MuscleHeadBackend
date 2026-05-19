@@ -22,4 +22,5 @@ public class SessionDetailsResponse {
     private String guestUserName;
     private List<LiveSessionExerciseDto> hostExercises;
     private List<LiveSessionExerciseDto> guestExercises;
+    private LiveSessionTimerResponse timer;
 }

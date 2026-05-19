@@ -1,9 +1,11 @@
 package com.MuscleHead.MuscleHead.LiveSession;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,9 @@ public class LiveSessionService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private Clock utcClock;
 
     private static Instant inviteVisibilityCutoff() {
         return Instant.now().minus(INVITE_VISIBILITY_WINDOW);
@@ -125,6 +130,7 @@ public class LiveSessionService {
 
         session.setGuestUserId(userId);
         session.setStatus(LiveWorkoutSession.SessionStatus.in_progress);
+        startTimerInternal(session, utcNow());
         sessionRepository.save(session);
     }
 
@@ -166,8 +172,58 @@ public class LiveSessionService {
             throw new IllegalStateException("Session has already ended");
         }
 
+        stopTimerInternal(session, utcNow());
         session.setStatus(LiveWorkoutSession.SessionStatus.ENDED);
         sessionRepository.save(session);
+    }
+
+    public LiveSessionTimerResponse getTimer(UUID sessionId, String userId) {
+        LiveWorkoutSession session = requireParticipant(sessionId, userId);
+        return toTimerResponse(session, utcNow());
+    }
+
+    @Transactional
+    public LiveSessionTimerResponse startTimer(UUID sessionId, String userId) {
+        LiveWorkoutSession session = requireHost(sessionId, userId);
+        requireSessionInProgress(session);
+        if (session.getTimerState() == TimerState.RUNNING) {
+            return toTimerResponse(session, utcNow());
+        }
+        if (session.getTimerState() == TimerState.PAUSED) {
+            throw new IllegalStateException("Timer is paused; use resume instead");
+        }
+        Instant now = utcNow();
+        session.setTimerElapsedSeconds(0);
+        startTimerInternal(session, now);
+        sessionRepository.save(session);
+        return toTimerResponse(session, now);
+    }
+
+    @Transactional
+    public LiveSessionTimerResponse pauseTimer(UUID sessionId, String userId) {
+        LiveWorkoutSession session = requireHost(sessionId, userId);
+        requireSessionInProgress(session);
+        if (session.getTimerState() != TimerState.RUNNING) {
+            throw new IllegalStateException("Timer is not running");
+        }
+        Instant now = utcNow();
+        pauseTimerInternal(session, now);
+        sessionRepository.save(session);
+        return toTimerResponse(session, now);
+    }
+
+    @Transactional
+    public LiveSessionTimerResponse resumeTimer(UUID sessionId, String userId) {
+        LiveWorkoutSession session = requireHost(sessionId, userId);
+        requireSessionInProgress(session);
+        if (session.getTimerState() != TimerState.PAUSED) {
+            throw new IllegalStateException("Timer is not paused");
+        }
+        Instant now = utcNow();
+        session.setTimerStartedAt(now);
+        session.setTimerState(TimerState.RUNNING);
+        sessionRepository.save(session);
+        return toTimerResponse(session, now);
     }
 
     public SessionDetailsResponse getSession(UUID sessionId) {
@@ -192,6 +248,7 @@ public class LiveSessionService {
                 .map(LiveSessionExerciseDto::from)
                 .collect(Collectors.toList());
 
+        Instant now = utcNow();
         return new SessionDetailsResponse(
                 session.getId(),
                 session.getHostUserId(),
@@ -201,7 +258,8 @@ public class LiveSessionService {
                 session.getHostUserName(),
                 session.getGuestUserName(),
                 hostExercises,
-                guestExercises);
+                guestExercises,
+                toTimerResponse(session, now));
     }
 
     public String getSessionStatusForUser(UUID sessionId, String userId) {
@@ -278,5 +336,71 @@ public class LiveSessionService {
                 i.getHostUserName(),
                 i.getGuestUserName() != null ? i.getGuestUserName() : "",
                 i.getStatus() != null ? i.getStatus().name() : null);
+    }
+
+    private LiveWorkoutSession requireParticipant(UUID sessionId, String userId) {
+        LiveWorkoutSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
+        boolean isHost = userId.equals(session.getHostUserId());
+        boolean isGuest = userId.equals(session.getGuestUserId());
+        if (!isHost && !isGuest) {
+            throw new LiveSessionForbiddenException("You are not a participant of this session");
+        }
+        return session;
+    }
+
+    private LiveWorkoutSession requireHost(UUID sessionId, String userId) {
+        LiveWorkoutSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
+        if (!session.getHostUserId().equals(userId)) {
+            throw new LiveSessionForbiddenException("Only the host can control the session timer");
+        }
+        return session;
+    }
+
+    private static void requireSessionInProgress(LiveWorkoutSession session) {
+        if (session.getStatus() != LiveWorkoutSession.SessionStatus.in_progress) {
+            throw new IllegalStateException("Timer can only be controlled while the session is in progress");
+        }
+    }
+
+    static long computeElapsedSeconds(LiveWorkoutSession session, Instant now) {
+        long elapsed = session.getTimerElapsedSeconds();
+        if (session.getTimerState() == TimerState.RUNNING && session.getTimerStartedAt() != null) {
+            elapsed += Duration.between(session.getTimerStartedAt(), now).getSeconds();
+        }
+        return Math.max(0, elapsed);
+    }
+
+    private static void startTimerInternal(LiveWorkoutSession session, Instant now) {
+        session.setTimerStartedAt(now);
+        session.setTimerState(TimerState.RUNNING);
+    }
+
+    private static void pauseTimerInternal(LiveWorkoutSession session, Instant now) {
+        if (session.getTimerStartedAt() != null) {
+            long segmentSeconds = Duration.between(session.getTimerStartedAt(), now).getSeconds();
+            session.setTimerElapsedSeconds(session.getTimerElapsedSeconds() + segmentSeconds);
+        }
+        session.setTimerStartedAt(null);
+        session.setTimerState(TimerState.PAUSED);
+    }
+
+    private static void stopTimerInternal(LiveWorkoutSession session, Instant now) {
+        if (session.getTimerState() == TimerState.RUNNING) {
+            pauseTimerInternal(session, now);
+        }
+        session.setTimerState(TimerState.STOPPED);
+    }
+
+    private LiveSessionTimerResponse toTimerResponse(LiveWorkoutSession session, Instant now) {
+        return new LiveSessionTimerResponse(
+                computeElapsedSeconds(session, now),
+                session.getTimerState(),
+                now);
+    }
+
+    private Instant utcNow() {
+        return Instant.now(utcClock);
     }
 }

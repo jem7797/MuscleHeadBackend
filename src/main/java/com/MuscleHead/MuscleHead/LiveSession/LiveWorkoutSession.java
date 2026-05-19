@@ -44,6 +44,18 @@ public class LiveWorkoutSession {
     @Enumerated(EnumType.STRING)
     private SessionStatus status = SessionStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "timer_state", nullable = false)
+    private TimerState timerState = TimerState.STOPPED;
+
+    /** Start of the current running segment (UTC). Null when not running. */
+    @Column(name = "timer_started_at")
+    private Instant timerStartedAt;
+
+    /** Accumulated elapsed seconds from prior running segments. */
+    @Column(name = "timer_elapsed_seconds", nullable = false)
+    private long timerElapsedSeconds = 0;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

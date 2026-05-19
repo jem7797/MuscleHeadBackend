@@ -79,6 +79,42 @@ public class LiveSessionController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/{sessionId}/timer")
+    public ResponseEntity<LiveSessionTimerResponse> getTimer(@PathVariable UUID sessionId) {
+        String userId = SecurityUtils.getCurrentUserSub();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(liveSessionService.getTimer(sessionId, userId));
+    }
+
+    @PostMapping("/{sessionId}/timer/start")
+    public ResponseEntity<LiveSessionTimerResponse> startTimer(@PathVariable UUID sessionId) {
+        String userId = SecurityUtils.getCurrentUserSub();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(liveSessionService.startTimer(sessionId, userId));
+    }
+
+    @PostMapping("/{sessionId}/timer/pause")
+    public ResponseEntity<LiveSessionTimerResponse> pauseTimer(@PathVariable UUID sessionId) {
+        String userId = SecurityUtils.getCurrentUserSub();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(liveSessionService.pauseTimer(sessionId, userId));
+    }
+
+    @PostMapping("/{sessionId}/timer/resume")
+    public ResponseEntity<LiveSessionTimerResponse> resumeTimer(@PathVariable UUID sessionId) {
+        String userId = SecurityUtils.getCurrentUserSub();
+        if (userId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(liveSessionService.resumeTimer(sessionId, userId));
+    }
+
     @GetMapping("/{sessionId}")
     public ResponseEntity<SessionDetailsResponse> getSession(@PathVariable UUID sessionId) {
         try {
