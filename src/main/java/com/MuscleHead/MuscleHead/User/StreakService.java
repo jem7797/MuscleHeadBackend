@@ -15,11 +15,17 @@ import jakarta.transaction.Transactional;
 public class StreakService {
 
     private final UserRepository userRepository;
+    private final UserService userService;
     private final NotificationService notificationService;
     private final Clock utcClock;
 
-    public StreakService(UserRepository userRepository, NotificationService notificationService, Clock utcClock) {
+    public StreakService(
+            UserRepository userRepository,
+            UserService userService,
+            NotificationService notificationService,
+            Clock utcClock) {
         this.userRepository = userRepository;
+        this.userService = userService;
         this.notificationService = notificationService;
         this.utcClock = utcClock;
     }
@@ -29,6 +35,7 @@ public class StreakService {
         User user = getRequiredUser(userId);
         applyStreakEvaluation(user, utcToday());
         userRepository.save(user);
+        invalidateUserCache(userId);
         return toResponse(user);
     }
 
@@ -37,11 +44,28 @@ public class StreakService {
         User user = getRequiredUser(userId);
         LocalDate today = utcToday();
 
-        // Additional workouts on the same UTC day keep status fresh without bumping the streak.
+        // Additional workouts on the same UTC day keep status fresh without bumping the streak count.
         if (today.equals(user.getLastWorkoutDate())) {
             user.setGracePeriodStart(null);
             user.setStreakStatus(StreakStatus.ACTIVE);
+            if (user.getCurrentStreak() <= 0) {
+                user.setCurrentStreak(1);
+            }
             userRepository.save(user);
+            invalidateUserCache(userId);
+            return toResponse(user);
+        }
+
+        if (user.getLastWorkoutDate() == null) {
+            user.setCurrentStreak(1);
+            user.setLastWorkoutDate(today);
+            user.setGracePeriodStart(null);
+            user.setStreakStatus(StreakStatus.ACTIVE);
+            if (user.getCurrentStreak() > user.getLongestStreak()) {
+                user.setLongestStreak(user.getCurrentStreak());
+            }
+            userRepository.save(user);
+            invalidateUserCache(userId);
             return toResponse(user);
         }
 
@@ -61,6 +85,7 @@ public class StreakService {
         }
 
         userRepository.save(user);
+        invalidateUserCache(userId);
         return toResponse(user);
     }
 
@@ -73,6 +98,7 @@ public class StreakService {
             StreakStatus previousStatus = user.getStreakStatus();
             applyStreakEvaluation(user, today);
             userRepository.save(user);
+            invalidateUserCache(user.getSub_id());
 
             if (previousStatus != StreakStatus.AT_RISK && user.getStreakStatus() == StreakStatus.AT_RISK) {
                 notificationService.createNotification(
@@ -88,7 +114,12 @@ public class StreakService {
         User user = getRequiredUser(userId);
         applyStreakEvaluation(user, utcToday());
         userRepository.save(user);
+        invalidateUserCache(userId);
         return toResponse(user);
+    }
+
+    private void invalidateUserCache(String userId) {
+        userService.invalidateUserCache(userId);
     }
 
     private void applyStreakEvaluation(User user, LocalDate today) {

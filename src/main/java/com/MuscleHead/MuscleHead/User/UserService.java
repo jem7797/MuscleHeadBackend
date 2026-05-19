@@ -444,7 +444,7 @@ public class UserService {
         }
     }
 
-    private void invalidateUserCache(String subId) {
+    public void invalidateUserCache(String subId) {
         if (subId == null || subId.isBlank()) return;
         redisService.delete(USER_CACHE_PREFIX + subId);
     }

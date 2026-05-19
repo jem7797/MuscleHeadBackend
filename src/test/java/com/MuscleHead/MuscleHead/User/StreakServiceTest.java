@@ -28,6 +28,9 @@ class StreakServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private UserService userService;
+
     @BeforeEach
     void setup() {
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -151,7 +154,7 @@ class StreakServiceTest {
     private StreakService serviceAt(String dateIso) {
         Instant instant = LocalDate.parse(dateIso).atStartOfDay().toInstant(ZoneOffset.UTC);
         Clock fixedClock = Clock.fixed(instant, ZoneOffset.UTC);
-        return new StreakService(userRepository, notificationService, fixedClock);
+        return new StreakService(userRepository, userService, notificationService, fixedClock);
     }
 
     private User createUser(String subId) {

@@ -143,6 +143,7 @@ public class SessionLogService {
         userRepository.save(user);
         userService.levelUp(user);
         streakService.onWorkoutLogged(user.getSub_id());
+        userService.invalidateUserCache(user.getSub_id());
         List<MedalResponse> newlyAwarded = medalService.checkAndAwardMedals(user, savedSessionLog);
 
         return new CreateSessionLogResult(savedSessionLog, newlyAwarded);
