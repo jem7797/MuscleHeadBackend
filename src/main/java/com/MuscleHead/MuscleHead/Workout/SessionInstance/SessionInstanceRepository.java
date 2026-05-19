@@ -1,5 +1,6 @@
 package com.MuscleHead.MuscleHead.Workout.SessionInstance;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -26,4 +27,15 @@ public interface SessionInstanceRepository extends JpaRepository<SessionInstance
 
     @Query("SELECT COALESCE(MAX(si.workout_highest_lift), 0) FROM SessionInstance si WHERE si.sessionLog.id = :sessionId")
     double findMaxLiftBySessionId(@Param("sessionId") long sessionId);
+
+    @Query("""
+            SELECT si FROM SessionInstance si
+            JOIN FETCH si.sessionLog sl
+            WHERE si.user.sub_id = :subId AND si.movement.id = :exerciseId
+            ORDER BY sl.date DESC
+            """)
+    List<SessionInstance> findRecentByUserAndExercise(
+            @Param("subId") String subId,
+            @Param("exerciseId") Long exerciseId,
+            Pageable pageable);
 }

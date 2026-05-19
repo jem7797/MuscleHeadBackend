@@ -1,5 +1,8 @@
 package com.MuscleHead.MuscleHead.Workout.SessionInstance;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -7,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
@@ -134,6 +138,42 @@ public class SessionInstanceService {
 
     public List<SessionInstance> getSessionInstancesBySessionId(long sessionId) {
         return sessionInstanceRepository.findByWorkoutSessionId(sessionId);
+    }
+
+    /**
+     * Most recent logged attempt for this exercise by the user (set-by-set from stored session instance).
+     */
+    public Optional<LastExerciseAttemptResponse> getLastAttempt(String subId, Long exerciseId) {
+        if (subId == null || subId.isBlank()) {
+            throw new IllegalArgumentException("User id must not be blank");
+        }
+        if (exerciseId == null) {
+            throw new IllegalArgumentException("Exercise id is required");
+        }
+
+        List<SessionInstance> recent = sessionInstanceRepository.findRecentByUserAndExercise(
+                subId,
+                exerciseId,
+                PageRequest.of(0, 1));
+        if (recent.isEmpty()) {
+            return Optional.empty();
+        }
+
+        SessionInstance instance = recent.get(0);
+        LocalDate date = instance.getSessionLog().getDate().atZone(ZoneOffset.UTC).toLocalDate();
+        List<LastExerciseSetResponse> sets = expandSets(instance);
+        return Optional.of(new LastExerciseAttemptResponse(date, sets));
+    }
+
+    static List<LastExerciseSetResponse> expandSets(SessionInstance instance) {
+        List<LastExerciseSetResponse> sets = new ArrayList<>();
+        int setCount = Math.max(0, instance.getSets());
+        int reps = instance.getReps();
+        double weight = instance.getWorkout_highest_lift();
+        for (int i = 0; i < setCount; i++) {
+            sets.add(new LastExerciseSetResponse(reps, weight));
+        }
+        return sets;
     }
 
     @Transactional

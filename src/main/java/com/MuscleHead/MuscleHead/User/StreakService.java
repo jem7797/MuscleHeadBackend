@@ -37,6 +37,14 @@ public class StreakService {
         User user = getRequiredUser(userId);
         LocalDate today = utcToday();
 
+        // Additional workouts on the same UTC day keep status fresh without bumping the streak.
+        if (today.equals(user.getLastWorkoutDate())) {
+            user.setGracePeriodStart(null);
+            user.setStreakStatus(StreakStatus.ACTIVE);
+            userRepository.save(user);
+            return toResponse(user);
+        }
+
         applyStreakEvaluation(user, today);
 
         if (user.getStreakStatus() == StreakStatus.BROKEN || user.getCurrentStreak() <= 0) {
@@ -78,6 +86,8 @@ public class StreakService {
     @Transactional
     public StreakResponse getStreak(String userId) {
         User user = getRequiredUser(userId);
+        applyStreakEvaluation(user, utcToday());
+        userRepository.save(user);
         return toResponse(user);
     }
 

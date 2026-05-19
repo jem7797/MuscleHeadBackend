@@ -101,6 +101,37 @@ class StreakServiceTest {
     }
 
     @Test
+    void secondWorkoutSameDay_doesNotIncrementStreak() {
+        User user = createUser("user-6");
+        user.setCurrentStreak(3);
+        user.setLongestStreak(3);
+        user.setLastWorkoutDate(LocalDate.of(2026, 5, 3));
+        user.setStreakStatus(StreakStatus.ACTIVE);
+        when(userRepository.findById("user-6")).thenReturn(Optional.of(user));
+
+        StreakResponse response = serviceAt("2026-05-03").onWorkoutLogged("user-6");
+
+        assertEquals(3, response.getCurrentStreak());
+        assertEquals(StreakStatus.ACTIVE, response.getStreakStatus());
+    }
+
+    @Test
+    void getStreak_evaluatesStaleStatusBeforeReturning() {
+        User user = createUser("user-7");
+        user.setCurrentStreak(3);
+        user.setLongestStreak(3);
+        user.setLastWorkoutDate(LocalDate.of(2026, 5, 3));
+        user.setStreakStatus(StreakStatus.ACTIVE);
+        when(userRepository.findById("user-7")).thenReturn(Optional.of(user));
+
+        StreakResponse response = serviceAt("2026-05-05").getStreak("user-7");
+
+        assertEquals(3, response.getCurrentStreak());
+        assertEquals(StreakStatus.AT_RISK, response.getStreakStatus());
+        assertEquals(LocalDate.of(2026, 5, 5), response.getGracePeriodStart());
+    }
+
+    @Test
     void firstWorkoutAfterBroken_startsFreshAtOne() {
         User user = createUser("user-5");
         user.setCurrentStreak(0);
